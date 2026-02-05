@@ -1,0 +1,6 @@
+requests
+watchdog
+requests
+watchdog
+plyer
+streamlit

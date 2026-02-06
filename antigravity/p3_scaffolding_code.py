@@ -1,4 +1,4 @@
-# P3 Dashboard Scaffolding Implementation
+# P3 Dashboard Scaffolding Implementation with Auto-Focus
 # This file contains the new P3 project scaffolding UI code
 # To be integrated into dashboard.py
 
@@ -108,7 +108,33 @@ with st.container():
                     for f in created_files:
                         st.text(f"✅ projects/{project_name}/{f}")
                 
-                st.info(t("project_auto_takeover"))
+                # P3 Phase 18: Auto-Focus on newly created project
+                st.info("🎯 " + t("auto_focusing_project"))
+                
+                # Force session state update to switch to new project
+                from pathlib import Path
+                from antigravity.p3_state_manager import P3StateManager
+                
+                project_path_obj = Path("projects") / project_name
+                
+                # Update session state
+                st.session_state.last_selected_project = None  # Force refresh
+                st.session_state.active_project_root = project_path_obj
+                
+                # Initialize components immediately
+                try:
+                    st.session_state.active_state_mgr = P3StateManager(project_path_obj)
+                    
+                    # Try to initialize performance monitor
+                    try:
+                        from antigravity.performance_monitor import PerformanceMonitor
+                        st.session_state.active_perf_monitor = PerformanceMonitor(str(project_path_obj))
+                    except:
+                        st.session_state.active_perf_monitor = None
+                    
+                    st.success("✅ " + t("project_auto_focused"))
+                except Exception as e:
+                    st.warning(f"⚠️ Auto-focus initialization: {e}")
                 
                 # Log to state manager
                 state_mgr.log_audit(
@@ -117,6 +143,9 @@ with st.container():
                     f"Created project with {len(created_files)} files",
                     "INFO"
                 )
+                
+                # Reactive reload to show new project
+                st.rerun()
                 
             except Exception as e:
                 st.error(t("project_creation_failed").format(e))

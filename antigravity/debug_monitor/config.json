@@ -1,0 +1,39 @@
+{
+    "enabled": true,
+    "log_level": "ERROR",
+    "storage_path": "debug_logs/",
+    "max_errors_per_day": 1000,
+    "language": "zh-CN",
+    "alert_settings": {
+        "show_toast": true,
+        "show_popup": true,
+        "auto_dismiss_after": 10,
+        "severity_colors": {
+            "CRITICAL": "#FF0000",
+            "ERROR": "#FF6B00",
+            "WARNING": "#FFD700",
+            "INFO": "#0080FF"
+        }
+    },
+    "analysis_settings": {
+        "enable_pattern_detection": true,
+        "similarity_threshold": 0.8,
+        "min_occurrences_for_pattern": 3,
+        "auto_suggest_fixes": true
+    },
+    "privacy_settings": {
+        "exclude_vars": [
+            "password",
+            "token",
+            "secret",
+            "api_key"
+        ],
+        "max_var_length": 200,
+        "sanitize_paths": true
+    },
+    "performance_settings": {
+        "async_storage": true,
+        "max_stack_depth": 10,
+        "capture_locals": true
+    }
+}

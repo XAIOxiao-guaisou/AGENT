@@ -945,11 +945,10 @@ if not perf_monitor and active_project_root:
 active_state_mgr = st.session_state.get('active_state_mgr', state_mgr)
 project_name = active_project_root.name if active_project_root != Path(".") else "Global"
 
-st.header(f"📊 {t('performance_monitor')} - {project_name}")
-
-if active_perf_monitor:
+# Display performance metrics if monitor is available
+if perf_monitor:
     try:
-        perf_data = active_perf_monitor.get_summary()
+        perf_data = perf_monitor.get_summary()
         
         # Performance Statistics Cards
         st.subheader(t("performance_stats"))
@@ -1051,11 +1050,12 @@ else:
     try:
         from antigravity.performance_monitor import PerformanceMonitor
         perf_monitor = PerformanceMonitor(str(active_project_root))
-        st.session_state.active_perf_monitor = perf_monitor
+        st.session_state.perf_monitor = perf_monitor
         st.rerun()
     except Exception as e:
-        st.warning(f"⚠️ Performance monitor not available for this project: {e}")
-        st.info("Performance monitoring requires initialization. Create some activity in this project first.")
+        st.warning(f"⚠️ Performance metrics unavailable: {str(e)}")
+        st.info(f"📊 Performance monitoring not available for {project_name} mode")
+        st.caption("Switch to a project to enable performance tracking")
 
 
 # ============================================================

@@ -802,13 +802,13 @@ with st.container():
         # PLAN.md Preview
         st.subheader(t("project_plan"))
         
-        # Apply button
-        if uploaded_file and st.button(t("apply_to_project_plan"), key="p3_apply_plan"):
-            st.session_state.p3_plan_content = content
+        # Apply button - check if content exists in session state
+        if st.session_state.get('p3_plan_content') and st.button(t("apply_to_project_plan"), key="p3_apply_plan"):
             st.success(t("plan_updated"))
         
         # Display current or uploaded plan
         plan_display = st.session_state.get('p3_plan_content', t("plan_placeholder"))
+
         st.text_area(
             t("current_plan"),
             value=plan_display,

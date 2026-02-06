@@ -105,6 +105,18 @@ LANGUAGES = {
         "created_files": "📋 已创建文件",
         "project_auto_takeover": "🌐 Monitor 将在 3 秒后检测到新项目并自动接管",
         "project_creation_failed": "❌ 项目创建失败: {}",
+        
+        # P3 Phase 17: Multi-Project Selector
+        "project_center": "项目指挥中心",
+        "active_project": "活跃项目",
+        "loading_project_context": "正在加载项目上下文...",
+        "project_loaded": "项目已加载",
+        "project_load_failed": "项目加载失败",
+        "project_info": "项目信息",
+        "no_plan_found": "⚠️ 未找到 PLAN.md",
+        "files": "文件数",
+        "last_sync": "最后同步",
+        
         # 项目配置 / Project Config
         "project_config": "⚙️ 项目配置",
         "allowed_roots": "允许的代码根目录 (用逗号分隔)",
@@ -235,6 +247,17 @@ LANGUAGES = {
         "created_files": "📋 Created Files",
         "project_auto_takeover": "🌐 Monitor will detect new project in ~3s and auto-takeover",
         "project_creation_failed": "❌ Project creation failed: {}",
+        
+        # P3 Phase 17: Multi-Project Selector
+        "project_center": "Project Center",
+        "active_project": "Active Project",
+        "loading_project_context": "Loading project context...",
+        "project_loaded": "Project loaded",
+        "project_load_failed": "Project load failed",
+        "project_info": "Project Info",
+        "no_plan_found": "⚠️ No PLAN.md found",
+        "files": "Files",
+        "last_sync": "Last Sync",
     }
 }
 
@@ -300,6 +323,129 @@ if st.sidebar.button(t("check_deps")):
             st.sidebar.warning(t("missing_deps").format(', '.join(missing)))
         else:
             st.sidebar.success(t("all_deps_ok"))
+
+# ============================================================
+# P3 Phase 17: Multi-Project Selector (项目指挥中心)
+# ============================================================
+st.sidebar.markdown("---")
+st.sidebar.subheader("🎯 " + t("project_center"))
+
+# Import P3 components
+from pathlib import Path
+from antigravity.p3_state_manager import P3StateManager
+
+# Get projects directory
+projects_dir = Path(CONFIG.get("PROJECTS_DIR", "projects"))
+
+# Scan for available projects
+available_projects = []
+project_status = {}
+
+if projects_dir.exists():
+    for project_path in projects_dir.iterdir():
+        if project_path.is_dir():
+            project_name = project_path.name
+            
+            # Check project health
+            has_plan = (project_path / "PLAN.md").exists()
+            has_state = (project_path / ".antigravity_state.json").exists()
+            
+            # Status indicator
+            if has_plan and has_state:
+                status = "🟢"  # Healthy
+            elif has_plan:
+                status = "🟡"  # Needs initialization
+            else:
+                status = "🔴"  # Broken (no PLAN.md)
+            
+            available_projects.append(project_name)
+            project_status[project_name] = status
+
+# Add "Global (Legacy)" option for backward compatibility
+project_options = ["Global (Legacy)"] + available_projects
+
+# Format options with status indicators
+formatted_options = []
+for opt in project_options:
+    if opt == "Global (Legacy)":
+        formatted_options.append("🌐 Global (Legacy)")
+    else:
+        status_icon = project_status.get(opt, "⚪")
+        formatted_options.append(f"{status_icon} {opt}")
+
+# Project selector dropdown
+selected_index = st.sidebar.selectbox(
+    t("active_project"),
+    range(len(formatted_options)),
+    format_func=lambda i: formatted_options[i],
+    key="p3_project_selector"
+)
+
+selected_project = project_options[selected_index]
+
+# Initialize session state for project switching
+if 'last_selected_project' not in st.session_state:
+    st.session_state.last_selected_project = None
+
+# Detect project switch
+if selected_project != st.session_state.last_selected_project:
+    st.session_state.last_selected_project = selected_project
+    
+    # Show loading indicator
+    with st.sidebar:
+        with st.spinner(t("loading_project_context")):
+            # P3: Reactive component mapping
+            if selected_project != "Global (Legacy)":
+                project_root = projects_dir / selected_project
+                st.session_state.active_project_root = project_root
+                
+                # Initialize project-specific components
+                try:
+                    st.session_state.active_state_mgr = P3StateManager(project_root)
+                    
+                    # Load performance monitor if available
+                    try:
+                        from antigravity.performance_monitor import PerformanceMonitor
+                        st.session_state.active_perf_monitor = PerformanceMonitor(str(project_root))
+                    except:
+                        st.session_state.active_perf_monitor = None
+                    
+                    st.sidebar.success(f"✅ {t('project_loaded')}: {selected_project}")
+                    
+                except Exception as e:
+                    st.sidebar.error(f"⚠️ {t('project_load_failed')}: {e}")
+                    st.session_state.active_project_root = Path(".")
+                    st.session_state.active_state_mgr = None
+            else:
+                # Legacy mode
+                st.session_state.active_project_root = Path(".")
+                st.session_state.active_state_mgr = state_mgr  # Use global state manager
+                st.session_state.active_perf_monitor = None
+
+# Display project info
+if selected_project != "Global (Legacy)":
+    project_root = projects_dir / selected_project
+    
+    # Project metadata
+    with st.sidebar.expander(f"📋 {t('project_info')}"):
+        if (project_root / "PLAN.md").exists():
+            plan_size = (project_root / "PLAN.md").stat().st_size
+            st.text(f"PLAN.md: {plan_size} bytes")
+        else:
+            st.warning(t("no_plan_found"))
+        
+        # Count project files
+        file_count = len(list(project_root.rglob("*.py"))) + len(list(project_root.rglob("*.js")))
+        st.text(f"{t('files')}: {file_count}")
+        
+        # Last modified
+        if (project_root / ".antigravity_state.json").exists():
+            import time
+            mtime = (project_root / ".antigravity_state.json").stat().st_mtime
+            last_mod = time.strftime('%Y-%m-%d %H:%M', time.localtime(mtime))
+            st.text(f"{t('last_sync')}: {last_mod}")
+
+st.sidebar.markdown("---")
 
 # ===========================
 # Project Configuration
@@ -686,8 +832,134 @@ else:
 if st.button(t("refresh")):
     st.rerun()
 
+# P3 Phase 17: Project-Scoped Performance Monitor
+# Replace the existing P3 Performance Monitor section in dashboard.py with this code
+
 # ============================================================
-# P3: Performance Monitoring (性能监控)
+# P3: Performance Monitor (性能监控中枢) - Project-Scoped
+# ============================================================
+
+st.markdown("---")
+
+# Get active project context from session state
+active_project_root = st.session_state.get('active_project_root', Path("."))
+active_perf_monitor = st.session_state.get('active_perf_monitor', None)
+active_state_mgr = st.session_state.get('active_state_mgr', state_mgr)
+project_name = active_project_root.name if active_project_root != Path(".") else "Global"
+
+st.header(f"📊 {t('performance_monitor')} - {project_name}")
+
+if active_perf_monitor:
+    try:
+        perf_data = active_perf_monitor.get_summary()
+        
+        # Performance Statistics Cards
+        st.subheader(t("performance_stats"))
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric(
+                t("total_operations"),
+                perf_data.get("total_operations", 0)
+            )
+        
+        with col2:
+            st.metric(
+                t("total_calls"),
+                perf_data.get("total_calls", 0)
+            )
+        
+        with col3:
+            avg_time = perf_data.get("average_time", 0)
+            st.metric(
+                t("avg_time"),
+                f"{avg_time:.2f}s"
+            )
+        
+        with col4:
+            total_time = perf_data.get("total_time", 0)
+            st.metric(
+                t("total_time"),
+                f"{total_time:.2f}s"
+            )
+        
+        # Slowest Operations
+        st.subheader(t("slowest_operations"))
+        slowest = perf_data.get("slowest_operations", [])
+        
+        if slowest:
+            for op in slowest[:5]:
+                col_op, col_time, col_calls = st.columns([3, 1, 1])
+                with col_op:
+                    st.text(f"📌 {op['operation']}")
+                with col_time:
+                    st.text(f"⏱️ {op['avg_time']:.2f}s")
+                with col_calls:
+                    st.text(f"🔢 {op['calls']}x")
+        else:
+            st.info(t("no_operations"))
+        
+        # Token Usage Estimation (Project-Specific)
+        st.subheader(t("token_usage"))
+        
+        # Load PLAN.md from active project
+        plan_path = active_project_root / "PLAN.md"
+        if plan_path.exists():
+            plan_content = plan_path.read_text(encoding='utf-8')
+            
+            # Estimate tokens (rough: 1 token ≈ 4 characters)
+            estimated_tokens = len(plan_content) // 4
+            max_tokens = CONFIG.get("MAX_TOKENS", 16000)
+            usage_pct = min(100, (estimated_tokens / max_tokens) * 100)
+            
+            st.progress(usage_pct / 100)
+            st.caption(f"{estimated_tokens:,} / {max_tokens:,} tokens ({usage_pct:.1f}%)")
+        else:
+            st.warning(t("no_plan_found"))
+        
+        # Recent Executions Timeline (Project-Specific)
+        st.subheader(t("recent_executions"))
+        
+        # Get audit logs from active state manager
+        recent_audits = active_state_mgr.get_recent_audits(limit=10)
+        
+        if recent_audits:
+            success_count = sum(1 for a in recent_audits if a.get('status') in ['PASS', 'FIXED'])
+            success_rate = (success_count / len(recent_audits)) * 100
+            
+            st.metric(t("success_rate"), f"{success_rate:.1f}%")
+            
+            # Timeline
+            for audit in reversed(recent_audits[-5:]):
+                timestamp = audit.get('timestamp', 'N/A')[:19]
+                file_path = audit.get('file_path', 'Unknown')
+                status = audit.get('status', 'INFO')
+                
+                status_icon = {
+                    'PASS': '✅',
+                    'FIXED': '🔧',
+                    'FAIL': '❌',
+                    'INFO': 'ℹ️'
+                }.get(status, '📝')
+                
+                st.text(f"{status_icon} {timestamp} | {file_path} | {status}")
+        else:
+            st.info(t("no_activity"))
+    
+    except Exception as e:
+        st.error(f"Performance monitor error: {e}")
+else:
+    # Fallback: Try to initialize performance monitor
+    try:
+        from antigravity.performance_monitor import PerformanceMonitor
+        perf_monitor = PerformanceMonitor(str(active_project_root))
+        st.session_state.active_perf_monitor = perf_monitor
+        st.rerun()
+    except Exception as e:
+        st.warning(f"⚠️ Performance monitor not available for this project: {e}")
+        st.info("Performance monitoring requires initialization. Create some activity in this project first.")
+
+
 # ============================================================
 
 st.markdown("---")

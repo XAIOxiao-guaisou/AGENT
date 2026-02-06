@@ -581,27 +581,29 @@ with col1:
     
     audits = state_mgr.get_recent_audits(limit=20)
     
-    if not audits:
-        st.info(t("no_audits"))
-    else:
-        for audit in reversed(audits):  # Show newest first
-            status = audit.get("status", "INFO")
-            file_name = audit.get("file_path", "Unknown")
-            timestamp = audit.get("timestamp", "")[:19]
-            event_type = audit.get("event_type", "")
-            
-            # Status icon
-            icon = {
-                "PASS": "✅",
-                "FIXED": "🔧",
-                "FAIL": "❌",
-                "INFO": "ℹ️",
-                "CRITICAL": "🔴"
-            }.get(status, "📝")
-            
-            with st.expander(f"{icon} {file_name} - {event_type}", expanded=False):
-                st.caption(f"⏰ {timestamp}")
-                st.text(audit.get("message", "")[:200])
+    # Wrap in expander to avoid filling the window
+    with st.expander(f"📋 {t('recent_audits')} ({len(audits)})", expanded=False):
+        if audits:
+            for audit in reversed(audits[-15:]):  # Last 15
+                file_name = audit.get("file_path", "Unknown").split("/")[-1]
+                event_type = audit.get("event_type", "unknown")
+                timestamp = audit.get("timestamp", "")[:19]
+                status = audit.get("status", "INFO")
+                
+                # Status icon
+                icon = {
+                    "SUCCESS": "✅",
+                    "ERROR": "❌",
+                    "WARNING": "⚠️",
+                    "INFO": "ℹ️"
+                }.get(status, "📝")
+                
+                with st.expander(f"{icon} {file_name} - {event_type}", expanded=False):
+                    st.caption(f"⏰ {timestamp}")
+                    st.text(audit.get("message", "")[:200])
+        else:
+            st.info(t("no_activity"))
+
 
 with col2:
     st.subheader(t("live_log"))

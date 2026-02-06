@@ -21,6 +21,11 @@ class AntigravityMonitor(FileSystemEventHandler):
         self.execution_lock = Lock() # Prevent recursive loops
         self.processing_files = set()
         
+        # P3: 初始化变更检测器 / Initialize change detector
+        self.change_detector = ChangeDetector(project_root)
+        self.incremental_threshold = CONFIG.get("INCREMENTAL_THRESHOLD", 3)
+        print(f"✅ P3: ChangeDetector initialized (threshold={self.incremental_threshold})")
+        
         # Load ignore patterns from config
         self.ignore_patterns = CONFIG.get("IGNORE_PATTERNS", [])
         self.watch_extensions = CONFIG.get("WATCH_EXTENSIONS", [".py", ".js", ".tsx", ".ts", ".md"])
@@ -141,41 +146,121 @@ class AntigravityMonitor(FileSystemEventHandler):
     
     def trigger_project_sync(self):
         """
-        执行项目级全自动同步循环
-        Execute project-level automatic sync loop
+        执行项目级智能同步循环 (P3 升级版)
+        Execute project-level intelligent sync loop (P3 upgraded)
+        
+        P3 Features:
+        - 变更检测: 0 变更 = 不触发 API / Change detection: 0 changes = no API
+        - 增量同步: ≤3 变更 = 增量修复 / Incremental: ≤3 changes = incremental fix
+        - 全量同步: >3 变更 = 全量重构 / Full sync: >3 changes = full refactor
+        - 快照管理: 成功后自动保存快照 / Snapshot: auto-save after success
         """
         with self.execution_lock:  # 必须持有锁,静默所有文件变动事件 / Must hold lock to silence file events
-            print("🌐 [Project Sync] 启动项目级接管流程...")
-            print("🌐 [Project Sync] Starting project-level takeover...")
+            print("🌐 [P3 Project Sync] 启动智能同步流程...")
+            print("🌐 [P3 Project Sync] Starting intelligent sync...")
             
             # 设置状态
             # Set status
-            self.state_manager.set_takeover_status("Syncing")
+            self.state_manager.set_takeover_status("Analyzing")
             
-            # 1. 切换至项目执行模式
-            # 1. Switch to project executor mode
-            self.auditor.set_mode('project_executor')
-            
-            # 2. 调用 P0 已实现的 audit_and_fix_project
-            # 2. Call P0-implemented audit_and_fix_project
-            # 该方法会读取全量上下文并进行多文件覆盖
-            # This method reads full context and performs multi-file writes
-            result = self.auditor.audit_and_fix_project()
-            
-            if result['status'] == 'SUCCESS':
-                modified = len(result.get('files_modified', []))
-                deleted = len(result.get('files_deleted', []))
-                print(f"✅ 同步完成: 修改 {modified} 文件, 删除 {deleted} 文件")
-                print(f"✅ Sync complete: Modified {modified} files, Deleted {deleted} files")
+            # P3: 扫描项目文件并检测变更
+            # P3: Scan project files and detect changes
+            try:
+                # 获取所有项目文件
+                project_files = []
+                for root, dirs, files in os.walk(self.project_root):
+                    # 跳过忽略目录
+                    dirs[:] = [d for d in dirs if not any(pattern in d for pattern in self.ignore_patterns)]
+                    
+                    for file in files:
+                        if any(file.endswith(ext) for ext in self.watch_extensions):
+                            rel_path = os.path.relpath(os.path.join(root, file), self.project_root)
+                            project_files.append(rel_path.replace('\\', '/'))
                 
-                # 3. 触发全量集成测试
-                # 3. Trigger full integration test
-                print("🧪 启动全量集成测试...")
-                print("🧪 Starting full integration test...")
-                self.run_full_test_suite()
+                # 扫描文件
+                self.change_detector.scan_files(project_files)
+                
+                # 获取变更摘要
+                summary = self.change_detector.get_change_summary()
+                
+                changed_files = summary['changed']
+                new_files = summary['new']
+                total_changes = summary['total_changes']
+                
+                print(f"📊 Change Summary: {total_changes} changes ({len(changed_files)} modified, {len(new_files)} new)")
+                
+            except Exception as e:
+                print(f"⚠️ Change detection failed: {e}, falling back to full sync")
+                total_changes = 999  # 强制全量同步
+                changed_files = []
+                new_files = []
+            
+            # P3: 智能决策 - 增量 vs 全量
+            # P3: Intelligent decision - incremental vs full
+            
+            # 场景 1: 零变更 - 拦截事件,不触发 API
+            # Scenario 1: Zero changes - block event, no API call
+            if total_changes == 0:
+                print("✅ No physical changes detected, skipping API call")
+                self.state_manager.set_takeover_status("Idle", "No changes")
+                return
+            
+            # 场景 2: 小变更 - 增量修复
+            # Scenario 2: Small changes - incremental fix
+            elif total_changes <= self.incremental_threshold:
+                print(f"🎯 Incremental sync mode ({total_changes} ≤ {self.incremental_threshold} changes)")
+                self.state_manager.set_takeover_status("Incremental Sync")
+                
+                # 切换至执行模式
+                self.auditor.set_mode('executor')
+                
+                # 只处理变更的文件
+                target_files = changed_files + new_files
+                
+                result = self.auditor.audit_and_fix_project(target_files=target_files)
+                
+                if result['status'] == 'SUCCESS':
+                    modified = len(result.get('files_modified', []))
+                    print(f"✅ Incremental sync complete: {modified} files fixed")
+                    
+                    # 运行测试
+                    print("🧪 Running tests on changed files...")
+                    self.run_full_test_suite()
+                    
+                    # 保存快照
+                    self.change_detector.save_snapshot({"mode": "incremental", "files": target_files})
+                    print("✅ Snapshot saved")
+                else:
+                    print("❌ Incremental sync failed")
+                    self.state_manager.set_takeover_status("Error", "Incremental Sync Failed")
+            
+            # 场景 3: 大变更 - 全量同步
+            # Scenario 3: Large changes - full sync
             else:
-                print("❌ 项目同步失败 / Project sync failed")
-                self.state_manager.set_takeover_status("Error", "Sync Failed")
+                print(f"🌐 Full sync mode ({total_changes} > {self.incremental_threshold} changes)")
+                self.state_manager.set_takeover_status("Full Sync")
+                
+                # 切换至项目执行模式
+                self.auditor.set_mode('project_executor')
+                
+                # 全量同步
+                result = self.auditor.audit_and_fix_project()
+                
+                if result['status'] == 'SUCCESS':
+                    modified = len(result.get('files_modified', []))
+                    deleted = len(result.get('files_deleted', []))
+                    print(f"✅ Full sync complete: Modified {modified} files, Deleted {deleted} files")
+                    
+                    # 触发全量集成测试
+                    print("🧪 Starting full integration test...")
+                    self.run_full_test_suite()
+                    
+                    # 保存快照
+                    self.change_detector.save_snapshot({"mode": "full", "total_files": len(project_files)})
+                    print("✅ Snapshot saved")
+                else:
+                    print("❌ Full sync failed")
+                    self.state_manager.set_takeover_status("Error", "Full Sync Failed")
     
     def run_full_test_suite(self):
         """

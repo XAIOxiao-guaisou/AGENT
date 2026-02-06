@@ -275,31 +275,31 @@ def show_debug_panel():
         with st.expander("🐛 调试监控 / Debug Monitor", expanded=False):
             # Show current project / 显示当前项目
             if current_project and current_project != "Global (Legacy)":
-                # Extract project name from path
+                # Extract project name from path / 从路径提取项目名
                 project_path = str(current_project)
                 if "/" in project_path:
                     project_name = project_path.split("/")[-1]
-                elif "\\\\" in project_path:
-                    project_name = project_path.split("\\\\")[-1]
+                elif "\\" in project_path:
+                    project_name = project_path.split("\\")[-1]
                 else:
                     project_name = project_path
                 st.caption(f"📁 当前项目 / Current: **{project_name}**")
             else:
                 st.caption("📁 当前项目 / Current: **全局模式 / Global**")
             
-            # Get error count
+            # Get error count / 获取错误计数
             try:
                 today_count = storage.get_error_count()
             except Exception as e:
                 today_count = 0
                 st.caption(f"⚠️ 错误计数失败 / Count failed: {str(e)[:30]}")
             
-            # Show metric with delta indicator
+            # Show metric with delta indicator / 显示带增量指示器的指标
             delta_color = "off" if today_count == 0 else "inverse"
             st.metric(
                 "今日错误 / Today's Errors",
                 today_count,
-                delta="✅ 无错误" if today_count == 0 else f"🔴 {today_count} 个错误",
+                delta="✅ 无错误 / No errors" if today_count == 0 else f"🔴 {today_count} 个错误 / errors",
                 delta_color=delta_color,
                 help="今天捕获的错误总数 / Total errors captured today"
             )

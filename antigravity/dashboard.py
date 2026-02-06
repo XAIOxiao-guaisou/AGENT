@@ -931,11 +931,11 @@ with st.container():
         )
 
         
-        st.info("ℹ️ 系统将自动创建标准 P3 项目结构")
-        st.caption("包含: main.py, core/, utils/, config/, tests/, data/")
+        st.info("ℹ️ 系统将自动创建标准 P3 项目结构 / System will auto-create standard P3 project structure")
+        st.caption("包含: main.py, core/, utils/, config/, tests/, data/ / Includes: main.py, core/, utils/, config/, tests/, data/")
         
         # 2. Drag-Drop Upload (Optional)
-        st.subheader(t("business_doc_upload"))
+        st.subheader("📤 " + t("business_doc_upload"))
         uploaded_file = st.file_uploader(
             t("drag_drop_doc"),
             type=['txt', 'md'],
@@ -944,8 +944,8 @@ with st.container():
         
         if uploaded_file:
             content = uploaded_file.read().decode('utf-8')
-            st.success(t("file_uploaded"))
-            with st.expander(t("preview")):
+            st.success("✅ " + t("file_uploaded"))
+            with st.expander("👁️ " + t("preview")):
                 st.text(content[:500] + "..." if len(content) > 500 else content)
             
             # Store in session state
@@ -953,7 +953,7 @@ with st.container():
 
     with p_col2:
         # PLAN.md Preview
-        st.subheader(t("project_plan"))
+        st.subheader("📜 " + t("project_plan"))
         
         # Apply button - check if content exists in session state
         if st.session_state.get('p3_plan_content') and st.button(t("apply_to_project_plan"), key="p3_apply_plan"):
@@ -1342,8 +1342,8 @@ if perf_monitor:
     except Exception as e:
         st.warning(f"⚠️ Performance metrics unavailable: {str(e)}")
 else:
-    st.info(f"📊 Performance monitoring not available for {project_name} mode")
-    st.caption("Switch to a project to enable performance tracking")
+    st.info(f"📊 {t('perf_not_available')}")
+    st.caption(t("switch_to_project"))
 
 
 

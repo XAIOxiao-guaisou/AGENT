@@ -224,19 +224,29 @@ class Auditor:
         
         return result
     
-    def _get_full_project_context(self, target_folder="src", target_files=None):
+    def _get_full_project_context(self, target_folder="src", target_files=None, failed_files=None):
         """
-        获取项目级上下文
-        Get project-level context
+        获取项目级智能上下文 (P3 升级版)
+        Get project-level intelligent context (P3 upgraded)
+        
+        P3 Features:
+        - 依赖分析: 只包含相关文件 / Dependency analysis: only relevant files
+        - Token 优化: 骨架化低优先级文件 / Token optimization: skeletonize low-priority files
+        - 失败驱动: 测试失败文件优先级最高 / Failure-driven: failed test files get highest priority
         
         Args:
             target_folder: 目标文件夹 / Target folder
-            target_files: 指定文件列表,如果为 None 则获取整个文件夹 / Specific files, or None for entire folder
+            target_files: 指定文件列表 / Specific files
+            failed_files: 上次测试失败的文件 (最高优先级) / Failed test files (highest priority)
         
         Returns:
             格式化的项目上下文字符串 / Formatted project context string
         """
-        context = "=== PROJECT CONTEXT ===\n\n"
+        from antigravity.performance_monitor import perf_monitor
+        
+        print("🧠 [P3] Building intelligent context...")
+        
+        context = "=== PROJECT CONTEXT (P3 Intelligent) ===\n\n"
         
         # 添加项目树结构
         # Add project tree structure
@@ -255,20 +265,113 @@ class Auditor:
                 for root, dirs, files in os.walk(target_path):
                     for file in files:
                         if file.endswith(('.py', '.js', '.tsx', '.ts')):
-                            target_files.append(os.path.join(root, file))
+                            rel_path = os.path.relpath(os.path.join(root, file), self.project_root)
+                            target_files.append(rel_path.replace('\\', '/'))
         
-        # 添加文件内容
-        # Add file contents
-        context += "[Current Files]\n"
-        for file_path in target_files:
-            if os.path.exists(file_path):
+        if not target_files:
+            print("⚠️ No target files found")
+            return context
+        
+        print(f"📊 Target files: {len(target_files)}")
+        
+        # P3: 构建依赖图并获取最小上下文
+        # P3: Build dependency graph and get minimal context
+        try:
+            # 构建依赖图
+            self.dependency_analyzer.build_dependency_graph(target_files)
+            
+            # 获取所有相关文件 (通过依赖分析)
+            all_relevant_files = set()
+            for target in target_files:
+                minimal_context = self.dependency_analyzer.get_minimal_context(target, max_depth=2)
+                all_relevant_files.update(minimal_context)
+            
+            print(f"📊 Dependency analysis: {len(target_files)} targets → {len(all_relevant_files)} relevant files")
+            
+        except Exception as e:
+            print(f"⚠️ Dependency analysis failed: {e}, falling back to target files only")
+            all_relevant_files = set(target_files)
+        
+        # 收集文件内容
+        # Collect file contents
+        files_content = {}
+        for file_path in all_relevant_files:
+            full_path = os.path.join(self.project_root, file_path)
+            if os.path.exists(full_path):
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
-                        content = f.read()
-                    rel_path = os.path.relpath(file_path, self.project_root)
-                    context += f"\nFILE: {rel_path}\n```python\n{content}\n```\n"
+                    with open(full_path, 'r', encoding='utf-8') as f:
+                        files_content[file_path] = f.read()
                 except Exception as e:
                     print(f"⚠️ Could not read {file_path}: {e}")
+        
+        # P3: 确定优先级文件
+        # P3: Determine priority files
+        priority_files = set(target_files)  # 目标文件始终优先
+        
+        # 失败驱动: 测试失败的文件获得最高优先级 (强制全文)
+        # Failure-driven: failed test files get highest priority (force full content)
+        if failed_files:
+            priority_files.update(failed_files)
+            print(f"🔴 Failed files (highest priority): {len(failed_files)}")
+        
+        # P3: 智能上下文优化
+        # P3: Intelligent context optimization
+        try:
+            # 估算输出所需的 tokens
+            plan_path = os.path.join(self.project_root, "PLAN.md")
+            reserve_tokens = 4096  # 默认预留
+            
+            if os.path.exists(plan_path):
+                with open(plan_path, 'r', encoding='utf-8') as f:
+                    plan_content = f.read()
+                reserve_tokens = self.context_manager.estimate_output_tokens(plan_content)
+            
+            # 优化上下文
+            optimized_files = self.context_manager.optimize_context(
+                files_content,
+                priority_files=list(priority_files),
+                reserve_tokens=reserve_tokens
+            )
+            
+            print(f"📊 Context optimized: {len(optimized_files)}/{len(files_content)} files retained")
+            
+        except Exception as e:
+            print(f"⚠️ Context optimization failed: {e}, using all files")
+            optimized_files = files_content
+        
+        # 格式化上下文
+        # Format context
+        context += "[Current Files]\n"
+        
+        # 优先显示失败文件
+        if failed_files:
+            context += "\n=== FAILED TEST FILES (HIGHEST PRIORITY) ===\n"
+            for file_path in failed_files:
+                if file_path in optimized_files:
+                    content = optimized_files[file_path]
+                    context += f"\nFILE: {file_path}\n```python\n{content}\n```\n"
+        
+        # 显示目标文件
+        context += "\n=== TARGET FILES ===\n"
+        for file_path in target_files:
+            if file_path in optimized_files and file_path not in (failed_files or []):
+                content = optimized_files[file_path]
+                context += f"\nFILE: {file_path}\n```python\n{content}\n```\n"
+        
+        # 显示依赖文件
+        dependency_files = set(optimized_files.keys()) - set(target_files) - set(failed_files or [])
+        if dependency_files:
+            context += "\n=== DEPENDENCY FILES ===\n"
+            for file_path in sorted(dependency_files):
+                content = optimized_files[file_path]
+                # 检查是否被骨架化
+                is_skeleton = "# ... [Implementation]" in content
+                marker = " (skeleton)" if is_skeleton else ""
+                context += f"\nFILE: {file_path}{marker}\n```python\n{content}\n```\n"
+        
+        # 统计信息
+        total_tokens = self.context_manager.count_tokens(context)
+        print(f"📊 Final context: {total_tokens} tokens, {len(optimized_files)} files")
         
         return context
     

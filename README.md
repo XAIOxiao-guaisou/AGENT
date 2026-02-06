@@ -398,6 +398,8 @@ python start_dashboard.py
 
 MIT License
 
+**仅供交流学习使用,商用请联系: 3989186944@qq.com**
+
 ---
 
 ## 🙏 致谢
@@ -413,6 +415,7 @@ MIT License
 
 - GitHub: [@XAIOxiao-guaisou](https://github.com/XAIOxiao-guaisou)
 - Issues: [GitHub Issues](https://github.com/XAIOxiao-guaisou/AGENT/issues)
+- 商务合作: 3989186944@qq.com
 
 ---
 

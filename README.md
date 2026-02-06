@@ -64,6 +64,50 @@ streamlit run antigravity/dashboard.py
 
 ---
 
+## 🎯 核心概念
+
+### Antigravity 系统 vs. 用户项目
+
+**重要**: 请区分两个不同的概念:
+
+1. **Antigravity 系统** (`d:\桌面\AGENT`)
+   - 这是代码生成引擎本身
+   - 包含 `antigravity/` 核心代码
+   - 根目录的 `PLAN.md` 是**项目模板**,供用户参考
+
+2. **用户项目** (`d:\桌面\AGENT\projects\{YourProject}`)
+   - 您要开发的实际项目
+   - 每个项目有自己的 `PLAN.md`
+   - 由 Antigravity 系统管理和生成代码
+
+### PLAN.md 驱动的开发流程
+
+```mermaid
+graph LR
+    A[编写 PLAN.md] --> B[Dashboard 创建项目]
+    B --> C[Monitor 检测变更]
+    C --> D[Agent 生成代码]
+    D --> E[Vibe Check 验证]
+    E --> F{满意?}
+    F -->|否| G[修改 PLAN.md]
+    G --> C
+    F -->|是| H[✅ 完成]
+```
+
+**当前能力**:
+- ✅ 自动创建项目结构
+- ✅ 监控 PLAN.md 变更
+- ✅ 生成基础代码框架
+- ✅ 自动生成文档
+- ✅ 项目健康度诊断
+
+**即将推出**:
+- 🚧 完整代码实现生成
+- 🚧 迭代式开发优化
+- 🚧 自动测试生成
+
+---
+
 ## 📋 使用流程
 
 ### 1️⃣ 创建新项目
@@ -92,11 +136,29 @@ streamlit run antigravity/dashboard.py
 ...
 ```
 
-### 3️⃣ 自动生成代码
+### 3️⃣ 启动 Monitor 监控
 
-- 保存 `PLAN.md` 后,Monitor 自动检测
-- Agent 分析需求并生成代码
-- 实时查看审计日志和进度
+```bash
+python start_all.py
+```
+
+- Monitor 自动检测 `PLAN.md` 变更
+- Agent 分析需求并生成代码框架
+- Dashboard 实时显示进度和审计日志
+
+### 4️⃣ 迭代开发
+
+1. **查看生成的代码** - 在项目目录检查生成的文件
+2. **运行 Vibe Check** - Dashboard 点击 "🩺 运行 Vibe Check"
+3. **查看健康度评分** - 0-100 分,A+ 为最佳
+4. **根据建议优化** - 修改 PLAN.md 或手动调整代码
+5. **重新生成** - Monitor 自动检测并更新
+
+### 5️⃣ 生成文档
+
+- Dashboard 点击 "📄 生成文档"
+- 自动生成 `README.md` 和 `requirements.txt`
+- 基于代码分析,无需手动编写
 
 ### 4️⃣ 健康诊断
 

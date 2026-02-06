@@ -117,6 +117,19 @@ LANGUAGES = {
         "files": "文件数",
         "last_sync": "最后同步",
         
+        # P3 Phase 18: Vibe Polish
+        "auto_focusing_project": "正在自动切换到新项目...",
+        "project_auto_focused": "项目已自动聚焦",
+        "run_vibe_check": "🩺 运行 Vibe Check",
+        "vibe_check_running": "正在诊断项目健康度...",
+        "vibe_check_complete": "诊断完成",
+        "health_score": "健康度评分",
+        "issues_found": "发现的问题",
+        "recommendations": "改进建议",
+        "generate_docs": "📄 生成文档",
+        "docs_generated": "README.md 和 requirements.txt 已生成",
+        "generating_docs": "正在生成项目文档...",
+        
         # 项目配置 / Project Config
         "project_config": "⚙️ 项目配置",
         "allowed_roots": "允许的代码根目录 (用逗号分隔)",
@@ -258,6 +271,19 @@ LANGUAGES = {
         "no_plan_found": "⚠️ No PLAN.md found",
         "files": "Files",
         "last_sync": "Last Sync",
+        
+        # P3 Phase 18: Vibe Polish
+        "auto_focusing_project": "Auto-focusing on new project...",
+        "project_auto_focused": "Project auto-focused",
+        "run_vibe_check": "🩺 Run Vibe Check",
+        "vibe_check_running": "Diagnosing project health...",
+        "vibe_check_complete": "Diagnosis complete",
+        "health_score": "Health Score",
+        "issues_found": "Issues Found",
+        "recommendations": "Recommendations",
+        "generate_docs": "📄 Generate Docs",
+        "docs_generated": "README.md and requirements.txt generated",
+        "generating_docs": "Generating project documentation...",
     }
 }
 
@@ -444,6 +470,61 @@ if selected_project != "Global (Legacy)":
             mtime = (project_root / ".antigravity_state.json").stat().st_mtime
             last_mod = time.strftime('%Y-%m-%d %H:%M', time.localtime(mtime))
             st.text(f"{t('last_sync')}: {last_mod}")
+    
+    # P3 Phase 18: Quick Actions Toolbox
+    st.sidebar.markdown("### 🛠️ Quick Actions")
+    
+    col1, col2 = st.sidebar.columns(2)
+    
+    with col1:
+        if st.button(t("run_vibe_check"), use_container_width=True):
+            from antigravity.vibe_check import VibeChecker
+            
+            with st.status(t("vibe_check_running"), expanded=True) as status:
+                checker = VibeChecker(project_root)
+                results = checker.diagnose()
+                
+                status.update(
+                    label=f"{t('vibe_check_complete')}: {results['percentage']:.0f}%",
+                    state="complete"
+                )
+            
+            # Display results in sidebar
+            st.sidebar.metric(
+                t("health_score"),
+                f"{results['percentage']:.0f}%",
+                delta=results['grade']
+            )
+            
+            st.sidebar.caption(f"**Status**: {results['status']}")
+            
+            if results['issues']:
+                with st.sidebar.expander(f"⚠️ {t('issues_found')} ({len(results['issues'])})"):
+                    for issue in results['issues']:
+                        st.text(issue)
+            
+            if results['recommendations']:
+                with st.sidebar.expander(f"💡 {t('recommendations')} ({len(results['recommendations'])})"):
+                    for rec in results['recommendations']:
+                        st.text(rec)
+    
+    with col2:
+        if st.button(t("generate_docs"), use_container_width=True):
+            from antigravity.doc_generator import DocGenerator
+            
+            with st.spinner(t("generating_docs")):
+                gen = DocGenerator(project_root)
+                
+                # Generate README
+                readme_content = gen.generate_readme()
+                (project_root / "README.md").write_text(readme_content, encoding='utf-8')
+                
+                # Generate requirements.txt
+                req_content = gen.generate_requirements()
+                if req_content:
+                    (project_root / "requirements.txt").write_text(req_content, encoding='utf-8')
+                
+                st.sidebar.success(t("docs_generated"))
 
 st.sidebar.markdown("---")
 

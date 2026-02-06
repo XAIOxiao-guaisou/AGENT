@@ -120,15 +120,28 @@ LANGUAGES = {
         # P3 Phase 18: Vibe Polish
         "auto_focusing_project": "正在自动切换到新项目...",
         "project_auto_focused": "项目已自动聚焦",
-        "run_vibe_check": "🩺 运行 Vibe Check",
-        "vibe_check_running": "正在诊断项目健康度...",
-        "vibe_check_complete": "诊断完成",
+        "vibe_check_button": "🩺 运行 Vibe Check",
+        "generate_docs_button": "📄 生成文档",
+        "docs_generated": "文档生成成功!",
+        "vibe_check_running": "正在运行 Vibe Check...",
+        "vibe_check_complete": "Vibe Check 完成!",
         "health_score": "健康度评分",
         "issues_found": "发现的问题",
         "recommendations": "改进建议",
-        "generate_docs": "📄 生成文档",
-        "docs_generated": "README.md 和 requirements.txt 已生成",
         "generating_docs": "正在生成项目文档...",
+        
+        # Performance Monitor
+        "performance_monitor": "性能监控",
+        "performance_stats": "性能统计",
+        "total_operations": "总操作数",
+        "total_calls": "总调用次数",
+        "avg_time": "平均耗时",
+        "total_time": "总耗时",
+        "slowest_operations": "最慢操作",
+        "no_operations": "暂无操作记录",
+        "token_usage": "Token 使用估算",
+        "recent_executions": "最近执行",
+        "success_rate": "成功率",
         
         # 项目配置 / Project Config
         "project_config": "⚙️ 项目配置",
@@ -142,22 +155,15 @@ LANGUAGES = {
         "monitor_will_detect": "🌐 Monitor 将在约 3 秒后检测到这些文件并触发项目级同步...",
         # P3 性能监控 / P3 Performance Monitor
         "p3_monitor": "📊 P3 性能监控",
-        "total_operations": "总操作数",
         "total_operations_help": "已监控的操作总数",
-        "total_calls": "总调用次数",
         "total_calls_help": "所有操作的总调用次数",
-        "total_time": "总耗时",
         "total_time_help": "所有操作的总耗时",
-        "slowest_operations": "⏱️ 最慢操作排行",
-        "no_perf_data": "暂无性能数据。执行操作后将在此显示。",
-        "token_usage": "🎯 Token 使用估算",
         "token_estimated": "预估: {}/{} tokens ({:.1f}%) | PLAN: {} | 输出: {}",
         "token_high": "⚠️ Token 使用率很高。考虑减少 PLAN.md 复杂度或使用增量同步。",
         "token_moderate": "ℹ️ Token 使用率中等。P3 优化将帮助减少上下文大小。",
         "token_healthy": "✅ Token 使用率健康。P3 优化运行良好。",
         "token_error": "Token 估算失败: {}",
         "plan_not_found": "未找到 PLAN.md。Token 估算不可用。",
-        "recent_executions": "🕐 最近执行",
         "no_recent_exec": "暂无最近执行记录。",
         "perf_monitor_unavailable": "性能监控器不可用: {}",
         "perf_data_error": "加载性能数据失败: {}",
@@ -275,14 +281,14 @@ LANGUAGES = {
         # P3 Phase 18: Vibe Polish
         "auto_focusing_project": "Auto-focusing on new project...",
         "project_auto_focused": "Project auto-focused",
-        "run_vibe_check": "🩺 Run Vibe Check",
-        "vibe_check_running": "Diagnosing project health...",
-        "vibe_check_complete": "Diagnosis complete",
+        "vibe_check_button": "🩺 Run Vibe Check",
+        "generate_docs_button": "📄 Generate Docs",
+        "docs_generated": "Documentation generated successfully!",
+        "vibe_check_running": "Running Vibe Check...",
+        "vibe_check_complete": "Vibe Check Complete!",
         "health_score": "Health Score",
         "issues_found": "Issues Found",
         "recommendations": "Recommendations",
-        "generate_docs": "📄 Generate Docs",
-        "docs_generated": "README.md and requirements.txt generated",
         "generating_docs": "Generating project documentation...",
     }
 }
@@ -921,7 +927,6 @@ if st.button(t("refresh")):
 # ============================================================
 
 st.markdown("---")
-st.header(f"📊 {t('performance_monitor')}")
 
 # Get active project context from session state
 active_project_root = st.session_state.get('active_project_root', Path("."))

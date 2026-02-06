@@ -57,6 +57,14 @@ LANGUAGES = {
         "refresh": "🔄 刷新面板",
         "powered_by": "由 DeepSeek-R1 & Antigravity Agent 驱动 | 自动刷新: 5秒",
         "language": "🌐 语言 / Language",
+        # 表格列标题 / Table column headers
+        "col_time": "时间",
+        "col_file": "文件",
+        "col_event": "事件",
+        "col_status": "状态",
+        # 占位符文本 / Placeholder text
+        "placeholder_file": "src/your_module.py",
+        "placeholder_task": "用户登录模块",
     },
     "en": {
         "page_title": "Antigravity Dashboard",
@@ -108,6 +116,14 @@ LANGUAGES = {
         "refresh": "🔄 Refresh Dashboard",
         "powered_by": "Powered by DeepSeek-R1 & Antigravity Agent | Auto-refresh: 5s",
         "language": "🌐 Language / 语言",
+        # 表格列标题 / Table column headers
+        "col_time": "Time",
+        "col_file": "File",
+        "col_event": "Event",
+        "col_status": "Status",
+        # 占位符文本 / Placeholder text
+        "placeholder_file": "src/your_module.py",
+        "placeholder_task": "User Login Module",
     }
 }
 
@@ -232,10 +248,10 @@ with col2:
         df_data = []
         for audit in reversed(audits[-10:]):  # Last 10
             df_data.append({
-                "Time": audit.get("timestamp", "")[:19],
-                "File": audit.get("file_path", ""),
-                "Event": audit.get("event_type", ""),
-                "Status": audit.get("status", "")
+                t("col_time"): audit.get("timestamp", "")[:19],
+                t("col_file"): audit.get("file_path", ""),
+                t("col_event"): audit.get("event_type", ""),
+                t("col_status"): audit.get("status", "")
             })
         
         if df_data:
@@ -261,12 +277,12 @@ with st.container():
         st.subheader(t("task_definition"))
         target_file = st.text_input(
             t("target_file"), 
-            placeholder="src/your_module.py",
+            placeholder=t("placeholder_file"),
             help=t("target_file_help")
         )
         task_name = st.text_input(
             t("task_name"), 
-            placeholder="User Login Module" if st.session_state.language == 'en' else "用户登录模块",
+            placeholder=t("placeholder_task"),
             help=t("task_name_help")
         )
         

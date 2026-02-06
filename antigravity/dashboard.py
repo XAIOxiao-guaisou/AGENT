@@ -65,6 +65,25 @@ LANGUAGES = {
         # 占位符文本 / Placeholder text
         "placeholder_file": "src/your_module.py",
         "placeholder_task": "用户登录模块",
+        # 项目级发射台 / Project Launcher
+        "project_launcher": "🚀 项目级发射台",
+        "project_files": "📁 项目结构定义",
+        "project_files_help": "输入项目涉及的文件路径 (每行一个)",
+        "upload_plan": "📤 业务文档上传",
+        "upload_plan_help": "上传需求文档 (.txt/.md),系统将自动更新至 PLAN.md",
+        "file_uploaded": "✅ 文件已上传",
+        "preview": "预览",
+        "apply_to_plan": "应用到 PLAN.md",
+        "plan_template": "📜 PLAN 模板",
+        "template_source": "模板来源",
+        "use_current": "使用当前",
+        "use_default": "使用默认模板",
+        "reset_template": "🔄 重置为默认模板",
+        "template_reset": "✅ 模板已重置",
+        "current_plan": "当前 PLAN",
+        "launch_project": "🔥 启动项目级开发",
+        "error_no_files": "❌ 请输入项目文件列表",
+        "project_launched": "🎯 项目已发射! 共 {} 个文件",
     },
     "en": {
         "page_title": "Antigravity Dashboard",
@@ -124,6 +143,25 @@ LANGUAGES = {
         # 占位符文本 / Placeholder text
         "placeholder_file": "src/your_module.py",
         "placeholder_task": "User Login Module",
+        # 项目级发射台 / Project Launcher
+        "project_launcher": "🚀 Project Launcher",
+        "project_files": "📁 Project Structure",
+        "project_files_help": "Enter project file paths (one per line)",
+        "upload_plan": "📤 Upload Plan",
+        "upload_plan_help": "Upload requirement document (.txt/.md), will update PLAN.md",
+        "file_uploaded": "✅ File uploaded",
+        "preview": "Preview",
+        "apply_to_plan": "Apply to PLAN.md",
+        "plan_template": "📜 PLAN Template",
+        "template_source": "Template Source",
+        "use_current": "Use Current",
+        "use_default": "Use Default Template",
+        "reset_template": "🔄 Reset to Default",
+        "template_reset": "✅ Template reset",
+        "current_plan": "Current PLAN",
+        "launch_project": "🔥 Launch Project Development",
+        "error_no_files": "❌ Please enter project file list",
+        "project_launched": "🎯 Project launched! {} files created",
     }
 }
 
@@ -389,6 +427,147 @@ if __name__ == '__main__':
                 import traceback
                 st.code(traceback.format_exc(), language="python")
 
+
+# ============================================================
+# Project-Level Launcher (P1)
+# 项目级发射台 (P1)
+# ============================================================
+
+st.markdown("---")
+st.header(t("project_launcher"))
+
+with st.container():
+    p_col1, p_col2 = st.columns([1, 2])
+    
+    with p_col1:
+        st.subheader(t("project_files"))
+        
+        # 多文件输入 / Multi-file input
+        project_files_input = st.text_area(
+            t("project_files_help"),
+            placeholder="src/main.py\nsrc/utils.py\nsrc/config.py",
+            height=150,
+            key="project_files_input"
+        )
+        
+        # 文件上传 / File upload
+        st.subheader(t("upload_plan"))
+        uploaded_file = st.file_uploader(
+            t("upload_plan_help"),
+            type=['txt', 'md'],
+            key="plan_uploader"
+        )
+        
+        if uploaded_file:
+            content = uploaded_file.read().decode('utf-8')
+            st.success(t("file_uploaded"))
+            
+            # 预览 / Preview
+            with st.expander(t("preview")):
+                st.text(content[:500] + "..." if len(content) > 500 else content)
+            
+            # 应用到 PLAN.md / Apply to PLAN.md
+            if st.button(t("apply_to_plan"), key="apply_plan_btn"):
+                try:
+                    with open("PLAN.md", "w", encoding='utf-8') as f:
+                        f.write(content)
+                    st.success(t("plan_updated"))
+                    state_mgr.log_audit(
+                        "PLAN.md",
+                        "plan_upload",
+                        f"Uploaded from {uploaded_file.name}",
+                        "INFO"
+                    )
+                    st.rerun()
+                except Exception as e:
+                    st.error(t("save_failed").format(e))
+        
+        # 重置模板 / Reset template
+        if st.button(t("reset_template"), key="reset_template_btn"):
+            try:
+                import shutil
+                if os.path.exists("config/PLAN_TEMPLATE.md"):
+                    shutil.copy("config/PLAN_TEMPLATE.md", "PLAN.md")
+                    st.success(t("template_reset"))
+                    state_mgr.log_audit(
+                        "PLAN.md",
+                        "template_reset",
+                        "Reset to default template",
+                        "INFO"
+                    )
+                    st.rerun()
+                else:
+                    st.warning("⚠️ Template file not found: config/PLAN_TEMPLATE.md")
+            except Exception as e:
+                st.error(f"Reset failed: {e}")
+    
+    with p_col2:
+        st.subheader(t("plan_template"))
+        
+        # 显示当前 PLAN / Display current PLAN
+        if os.path.exists("PLAN.md"):
+            with open("PLAN.md", "r", encoding='utf-8') as f:
+                current_plan = f.read()
+            st.text_area(
+                t("current_plan"),
+                value=current_plan,
+                height=350,
+                disabled=True,
+                key="current_plan_display"
+            )
+        else:
+            st.info("ℹ️ PLAN.md not found. Upload a file or reset to template.")
+    
+    # 项目级启动按钮 / Project-level launch button
+    if st.button(t("launch_project"), type="primary", use_container_width=True, key="launch_project_btn"):
+        if not project_files_input.strip():
+            st.error(t("error_no_files"))
+        else:
+            files = [f.strip() for f in project_files_input.split('\n') if f.strip()]
+            
+            try:
+                created_files = []
+                
+                # 创建所有占位文件 / Create all placeholder files
+                for file_path in files:
+                    # 确保路径安全 / Ensure path safety
+                    if not file_path.startswith('src/') and not file_path.startswith('tests/'):
+                        st.warning(f"⚠️ Skipping unsafe path: {file_path}")
+                        continue
+                    
+                    full_path = os.path.join(".", file_path)
+                    os.makedirs(os.path.dirname(full_path), exist_ok=True)
+                    
+                    if not os.path.exists(full_path):
+                        with open(full_path, "w", encoding='utf-8') as f:
+                            f.write(f"# Auto-generated placeholder for Antigravity\n")
+                            f.write(f"# File: {file_path}\n")
+                            f.write(f"# TODO: Implement according to PLAN.md\n\n")
+                        created_files.append(file_path)
+                        
+                        # 记录到状态管理器 / Log to state manager
+                        state_mgr.log_audit(
+                            file_path,
+                            "project_file_created",
+                            "Created placeholder for project launch",
+                            "INFO"
+                        )
+                
+                if created_files:
+                    st.balloons()
+                    st.success(t("project_launched").format(len(created_files)))
+                    
+                    # 显示创建的文件 / Show created files
+                    with st.expander("📋 Created Files"):
+                        for f in created_files:
+                            st.text(f"✅ {f}")
+                    
+                    st.info("🌐 Monitor will detect these files and trigger project-level sync in ~3 seconds...")
+                else:
+                    st.warning("⚠️ No files created. Check file paths.")
+                
+            except Exception as e:
+                st.error(t("launch_failed").format(e))
 
 # Environment Check Results
 st.subheader(t("env_status"))

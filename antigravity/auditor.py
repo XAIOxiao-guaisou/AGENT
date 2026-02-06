@@ -7,12 +7,24 @@ from antigravity.utils import get_git_diff, get_tree_structure
 from antigravity.notifier import alert_critical
 from antigravity.config import CONFIG
 from antigravity.state_manager import StateManager
+from antigravity.dependency_analyzer import DependencyAnalyzer
+from antigravity.context_manager import ContextManager
 
 class Auditor:
     def __init__(self, project_root, state_manager=None):
         self.project_root = project_root
         self.state_manager = state_manager or StateManager(project_root)
         self.current_mode = CONFIG.get("ACTIVE_MODE", "executor")
+        
+        # P2: 初始化依赖分析器和上下文管理器
+        # P2: Initialize dependency analyzer and context manager
+        self.dependency_analyzer = DependencyAnalyzer(project_root)
+        
+        # 获取模型的 max_tokens 配置
+        max_tokens = CONFIG.get("prompts", {}).get(self.current_mode, {}).get("max_tokens", 16384)
+        self.context_manager = ContextManager(model="gpt-4", max_tokens=max_tokens)
+        
+        print(f"✅ P2 modules initialized: DependencyAnalyzer + ContextManager (max_tokens={max_tokens})")
         
         # Load prompt from config
         self._load_prompt()

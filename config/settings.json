@@ -15,5 +15,30 @@
         "tests/antigravity",
         "tasks.json",
         "requirements.txt"
+    ],
+    "IGNORE_PATTERNS": [
+        "**/__pycache__/**",
+        "**/.pytest_cache/**",
+        "**/.git/**",
+        "**/node_modules/**",
+        "**/venv/**",
+        "**/env/**",
+        "**/build/**",
+        "**/dist/**",
+        "**/*.pyc",
+        "**/*.pyo",
+        "**/*.log",
+        "**/data/**",
+        "**/.vscode/**",
+        "**/.idea/**",
+        "**/state.json",
+        "**/VIBE_FIX.md"
+    ],
+    "WATCH_EXTENSIONS": [
+        ".py",
+        ".js",
+        ".tsx",
+        ".ts",
+        ".md"
     ]
 }

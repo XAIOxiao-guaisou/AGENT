@@ -1,6 +1,6 @@
 requests
 watchdog
-requests
-watchdog
 plyer
+pyyaml
 streamlit
+pandas

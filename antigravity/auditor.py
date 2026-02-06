@@ -6,44 +6,50 @@ import re
 from antigravity.utils import get_git_diff, get_tree_structure
 from antigravity.notifier import alert_critical
 from antigravity.config import CONFIG
-
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "YOUR_API_KEY_HERE")
-DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions" # Example URL
+from antigravity.state_manager import StateManager
 
 class Auditor:
-    def __init__(self, project_root):
+    def __init__(self, project_root, state_manager=None):
         self.project_root = project_root
-        self.failure_counts = {}
+        self.state_manager = state_manager or StateManager(project_root)
+        self.current_mode = CONFIG.get("ACTIVE_MODE", "executor")
         
-        # Enhanced "Executor" Prompt
-        self.system_prompt = """
-Role: You are Antigravity Executor (Sheriff-1). Your goal is to FULLY IMPLEMENT the PLAN.md.
-Rules:
-1. If the code is missing or incorrect, rewrite the ENTIRE file.
-2. Wrap the code in ```python ... ``` blocks.
-3. Logic must be robust (anti-bot, error handling).
-4. Do NOT include explanations outside the code block if possible, or keep them minimal.
-5. If the current code is empty or just a placeholder, implement the full logic based on PLAN.md.
-
-Output Format:
-- If task complete and code is correct: "STATUS: PASS"
-- If fix/implementation needed:
-  FIX_CODE:
-  ```python
-  [Full Code Here]
-  ```
-  RATIONALE: [Why]
-"""
+        # Load prompt from config
+        self._load_prompt()
+    
+    def _load_prompt(self):
+        """Load system prompt from config based on current mode."""
+        prompts = CONFIG.get("prompts", {})
+        modes = prompts.get("modes", {})
+        
+        if self.current_mode not in modes:
+            print(f"⚠️ Warning: Mode '{self.current_mode}' not found. Using 'executor'.")
+            self.current_mode = "executor"
+        
+        mode_config = modes.get(self.current_mode, {})
+        self.system_prompt = mode_config.get("system_prompt", "You are a code assistant.")
+        self.temperature = mode_config.get("temperature", 0.0)
+        self.max_tokens = mode_config.get("max_tokens", 4096)
+        
+        print(f"🤖 Auditor Mode: {self.current_mode}")
+    
+    def set_mode(self, mode_name: str):
+        """Switch to a different prompt mode."""
+        self.current_mode = mode_name
+        self._load_prompt()
 
     def audit_and_fix(self, file_path, error_context=None):
         """
         Main entry point for Agent Takeover.
         Returns: "PASS", "FIXED", or "FAIL"
         """
-        # Circuit Breaker Check
-        if self.failure_counts.get(file_path, 0) >= CONFIG.get("RETRY_LIMIT", 3):
+        # Circuit Breaker Check using StateManager
+        retry_count = self.state_manager.get_retry_count(file_path)
+        if retry_count >= CONFIG.get("RETRY_LIMIT", 3):
              print(f"Skipping {file_path}: Manual Mode engaged.")
              alert_critical(f"MANUAL MODE: Stopped auditing {os.path.basename(file_path)} after failures.")
+             self.state_manager.log_audit(file_path, "circuit_breaker", 
+                                         f"Manual mode after {retry_count} failures", "FAIL")
              return "FAIL"
 
         print(f"Auditing/Executing file: {file_path}")
@@ -96,26 +102,29 @@ Apply the plan and provide the full corrected code if necessary.
         if "FIX_CODE:" in response_content or "```python" in response_content:
              # Check for "STATUS: PASS" to avoid false positives if LLM chats too much
              if "STATUS: PASS" in response_content and "FIX_CODE:" not in response_content:
-                  self._log_audit(file_path, "STATUS: PASS")
-                  self.failure_counts[file_path] = 0
+                  self.state_manager.log_audit(file_path, "audit", "STATUS: PASS", "PASS")
+                  self.state_manager.reset_retry(file_path)
                   return "PASS"
                   
              new_code = self._extract_code(response_content)
              if new_code:
                  # Self-Reflection / Safety Check could go here
                  self._apply_fix(file_path, new_code)
-                 self._log_audit(file_path, f"[AGENT TAKEOVER]\nApplied Fix.\nRationale: Extracted from response.")
+                 self.state_manager.log_audit(file_path, "fix", 
+                                             "[AGENT TAKEOVER] Applied Fix", "FIXED")
                  return "FIXED"
              else:
                  print("Failed to extract code from response.")
                  return "FAIL"
         elif "STATUS: PASS" in response_content:
-             self._log_audit(file_path, "STATUS: PASS")
-             self.failure_counts[file_path] = 0
+             self.state_manager.log_audit(file_path, "audit", "STATUS: PASS", "PASS")
+             self.state_manager.reset_retry(file_path)
              return "PASS"
         else:
              # Fallback: Assume fail if no explicit pass and no code
-             self._log_audit(file_path, f"[UNCERTAIN RESPONSE]\n{response_content}")
+             self.state_manager.log_audit(file_path, "uncertain", 
+                                         f"Uncertain response: {response_content[:200]}", "FAIL")
+             self.state_manager.increment_retry(file_path)
              return "FAIL"
 
     def _call_deepseek(self, user_prompt):
@@ -134,8 +143,8 @@ Apply the plan and provide the full corrected code if necessary.
                         {"role": "system", "content": self.system_prompt},
                         {"role": "user", "content": user_prompt}
                     ],
-                    "temperature": CONFIG.get("TEMPERATURE", 0.0),
-                    "max_tokens": CONFIG.get("MAX_TOKENS", 4096)
+                    "temperature": self.temperature,
+                    "max_tokens": self.max_tokens
                 },
                 timeout=60
             )
@@ -175,5 +184,6 @@ Apply the plan and provide the full corrected code if necessary.
         print(f"Agent wrote code to {file_path}")
 
     def _log_audit(self, file_path, message):
-         with open(os.path.join(self.project_root, "vibe_audit.log"), "a", encoding='utf-8') as log:
-             log.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {os.path.basename(file_path)}:\n{message}\n{'-'*20}\n")
+        """Legacy log method - now handled by StateManager."""
+        # Kept for backward compatibility, but StateManager is now primary
+        pass

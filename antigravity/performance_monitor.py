@@ -248,69 +248,69 @@ class PerformanceMonitor:
                     "success_rate": stats["success_rate"]
                 }
                 for op, stats in all_stats.items()
-            ]\r
-        }\r
-    \r
-    def get_summary(self) -> Dict:\r
-        """\r
-        Get summary of performance metrics (alias for get_dashboard_data)\r
-        For backward compatibility with dashboard\r
-        \r
-        Returns:\r
-            Performance summary dictionary\r
-        """\r
-        dashboard_data = self.get_dashboard_data()\r
-        \r
-        # Calculate average time across all operations\r
-        all_stats = self.get_stats()\r
-        total_time = sum(s["total_time"] for s in all_stats.values()) if all_stats else 0\r
-        total_calls = sum(s["call_count"] for s in all_stats.values()) if all_stats else 0\r
-        avg_time = total_time / total_calls if total_calls > 0 else 0\r
-        \r
-        return {\r
-            "total_operations": dashboard_data["total_operations"],\r
-            "total_calls": total_calls,\r
-            "total_time": total_time,\r
-            "average_time": avg_time,\r
-            "slowest_operations": [\r
-                {\r
-                    "operation": op["operation"],\r
-                    "avg_time": op["avg_time"],\r
-                    "calls": op["call_count"]\r
-                }\r
-                for op in dashboard_data["top_slowest"]\r
-            ]\r
-        }\r
-    \r
-    def get_recent_operations(self, limit: int = 10) -> List[Dict]:\r
-        """\r
-        Get recent operations for dashboard display\r
-        \r
-        Args:\r
-            limit: Maximum number of operations to return\r
-        \r
-        Returns:\r
-            List of recent operation dictionaries\r
-        """\r
-        all_stats = self.get_stats()\r
-        \r
-        # Sort by last execution time\r
-        sorted_ops = sorted(\r
-            all_stats.items(),\r
-            key=lambda x: x[1].get("last_execution", ""),\r
-            reverse=True\r
-        )\r
-        \r
-        return [\r
-            {\r
-                "operation": op,\r
-                "duration": stats["avg_time"],\r
-                "calls": stats["call_count"],\r
-                "success_rate": stats["success_rate"],\r
-                "last_execution": stats["last_execution"]\r
-            }\r
-            for op, stats in sorted_ops[:limit]\r
-        ]\r
+            ]
+        }
+    
+    def get_summary(self) -> Dict:
+        """
+        Get summary of performance metrics (alias for get_dashboard_data)
+        For backward compatibility with dashboard
+        
+        Returns:
+            Performance summary dictionary
+        """
+        dashboard_data = self.get_dashboard_data()
+        
+        # Calculate average time across all operations
+        all_stats = self.get_stats()
+        total_time = sum(s["total_time"] for s in all_stats.values()) if all_stats else 0
+        total_calls = sum(s["call_count"] for s in all_stats.values()) if all_stats else 0
+        avg_time = total_time / total_calls if total_calls > 0 else 0
+        
+        return {
+            "total_operations": dashboard_data["total_operations"],
+            "total_calls": total_calls,
+            "total_time": total_time,
+            "average_time": avg_time,
+            "slowest_operations": [
+                {
+                    "operation": op["operation"],
+                    "avg_time": op["avg_time"],
+                    "calls": op["call_count"]
+                }
+                for op in dashboard_data["top_slowest"]
+            ]
+        }
+    
+    def get_recent_operations(self, limit: int = 10) -> List[Dict]:
+        """
+        Get recent operations for dashboard display
+        
+        Args:
+            limit: Maximum number of operations to return
+        
+        Returns:
+            List of recent operation dictionaries
+        """
+        all_stats = self.get_stats()
+        
+        # Sort by last execution time
+        sorted_ops = sorted(
+            all_stats.items(),
+            key=lambda x: x[1].get("last_execution", ""),
+            reverse=True
+        )
+        
+        return [
+            {
+                "operation": op,
+                "duration": stats["avg_time"],
+                "calls": stats["call_count"],
+                "success_rate": stats["success_rate"],
+                "last_execution": stats["last_execution"]
+            }
+            for op, stats in sorted_ops[:limit]
+        ]
 
 
 

@@ -66,11 +66,58 @@ LANGUAGES = {
         "refresh": "🔄 刷新面板",
         "powered_by": "由 DeepSeek-R1 & Antigravity Agent 驱动 | 自动刷新: 5秒",
         "language": "🌐 语言 / Language",
+        "powered_by_p3": "由 P3 架构驱动", # Renamed to avoid duplicate key
         # 表格列标题 / Table column headers
         "col_time": "时间",
         "col_file": "文件",
         "col_event": "事件",
         "col_status": "状态",
+        
+        # Debug Monitor / 调试监控
+        "debug_monitor": "调试监控",
+        "today_errors": "今日错误",
+        "view_details": "查看详情",
+        "close_dashboard": "关闭仪表板",
+        "error_details": "错误详情",
+        "view_stack": "查看堆栈",
+        "view_similar": "查看相似",
+        "close": "关闭",
+        "error_analytics": "错误分析",
+        "total_errors": "总错误数",
+        "error_types": "错误类型",
+        "critical_errors": "严重错误",
+        "most_frequent": "最常见",
+        "error_trend": "错误趋势",
+        "error_list": "错误列表",
+        "no_errors": "没有错误记录",
+        "error_time": "时间",
+        "error_type": "类型",
+        "error_message": "消息",
+        "error_file": "文件",
+        "error_line": "行",
+        "error_severity": "严重性",
+        
+        # Project Scaffolding / 项目脚手架
+        "scaffolding_launcher": "项目全自动发射台",
+        "project_name": "项目名称",
+        "project_name_placeholder": "例如: my_awesome_project",
+        "project_name_help": "输入项目名称,系统将自动创建标准 P3 结构",
+        "business_doc_upload": "业务文档上传",
+        "drag_drop_doc": "拖拽或点击上传文档",
+        "file_uploaded": "文件已上传",
+        "preview": "预览",
+        "project_plan": "项目计划",
+        "apply_to_project_plan": "应用到项目计划",
+        "plan_updated": "计划已更新",
+        "current_plan": "当前计划",
+        "plan_placeholder": "上传文档后显示计划内容...",
+        "create_and_launch": "创建并启动项目",
+        "error_no_project_name": "请输入项目名称",
+        "project_created": "项目 {} 创建成功!",
+        "created_files": "已创建的文件",
+        "auto_focusing_project": "正在自动聚焦到新项目...",
+        "project_auto_focused": "项目已自动聚焦",
+        "project_creation_failed": "项目创建失败: {}",
         # 占位符文本 / Placeholder text
         "placeholder_file": "src/your_module.py",
         "placeholder_task": "用户登录模块",
@@ -80,40 +127,40 @@ LANGUAGES = {
         "project_files_help": "输入项目涉及的文件路径 (每行一个)",
         "upload_plan": "📤 业务文档上传",
         "upload_plan_help": "上传需求文档 (.txt/.md),系统将自动更新至 PLAN.md",
-        "file_uploaded": "✅ 文件已上传",
-        "preview": "预览",
-        "apply_to_plan": "应用到 PLAN.md",
+        # "file_uploaded": "✅ 文件已上传", # Duplicate, already added above
+        # "preview": "预览", # Duplicate, already added above
+        # "apply_to_plan": "应用到 PLAN.md", # Duplicate, already added above
         "plan_template": "📜 PLAN 模板",
         "template_source": "模板来源",
         "use_current": "使用当前",
         "use_default": "使用默认模板",
         "reset_template": "🔄 重置为默认模板",
         "template_reset": "✅ 模板已重置",
-        "current_plan": "当前 PLAN",
+        # "current_plan": "当前 PLAN", # Duplicate, already added above
         "launch_project": "🔥 启动项目级开发",
         "error_no_files": "❌ 请输入项目文件列表",
         "project_launched": "🎯 项目已发射! 共 {} 个文件",
         # P3 项目脚手架 / P3 Project Scaffolding
-        "scaffolding_launcher": "🚀 项目全自动发射台",
-        "project_name": "项目名称",
+        # "scaffolding_launcher": "🚀 项目全自动发射台", # Duplicate, already added above
+        # "project_name": "项目名称", # Duplicate, already added above
         "project_name_placeholder": "例如: XhsDataScraper",
         "project_name_help": "系统将为您自动创建独立目录",
-        "error_no_project_name": "❌ 请输入项目名称",
+        # "error_no_project_name": "❌ 请输入项目名称", # Duplicate, already added above
         "project_structure": "项目内部结构",
         "project_structure_help": "每行一个文件路径 (相对路径)",
         "project_structure_placeholder": "main.py\nutils/parser.py\nconfig.json\ntests/test_main.py",
-        "business_doc_upload": "📤 业务文档上传",
-        "drag_drop_doc": "拖拽上传业务文档 (.txt/.md)",
-        "apply_to_project_plan": "应用到项目计划",
-        "project_plan": "📜 项目计划",
-        "current_plan": "当前计划",
+        # "business_doc_upload": "📤 业务文档上传", # Duplicate, already added above
+        # "drag_drop_doc": "拖拽上传业务文档 (.txt/.md)", # Duplicate, already added above
+        # "apply_to_project_plan": "应用到项目计划", # Duplicate, already added above
+        # "project_plan": "📜 项目计划", # Duplicate, already added above
+        # "current_plan": "当前计划", # Duplicate, already added above
         "plan_placeholder": "# 项目计划\n\n请上传业务文档或手动编辑...",
-        "create_and_launch": "🔥 创建项目并启动全自动接管",
+        # "create_and_launch": "🔥 创建项目并启动全自动接管", # Duplicate, already added above
         "error_no_structure": "❌ 请定义项目结构",
-        "project_created": "✅ 项目 `{}` 已在独立文件夹中初始化成功!",
-        "created_files": "📋 已创建文件",
+        # "project_created": "✅ 项目 `{}` 已在独立文件夹中初始化成功!", # Duplicate, already added above
+        # "created_files": "📋 已创建文件", # Duplicate, already added above
         "project_auto_takeover": "🌐 Monitor 将在 3 秒后检测到新项目并自动接管",
-        "project_creation_failed": "❌ 项目创建失败: {}",
+        # "project_creation_failed": "❌ 项目创建失败: {}", # Duplicate, already added above
         
         # P3 Phase 17: Multi-Project Selector
         "project_center": "项目指挥中心",
@@ -227,11 +274,58 @@ LANGUAGES = {
         "refresh": "🔄 Refresh Dashboard",
         "powered_by": "Powered by DeepSeek-R1 & Antigravity Agent | Auto-refresh: 5s",
         "language": "🌐 Language / 语言",
+        "powered_by_p3": "Powered by P3 Architecture", # Renamed to avoid duplicate key
         # 表格列标题 / Table column headers
         "col_time": "Time",
         "col_file": "File",
         "col_event": "Event",
         "col_status": "Status",
+        
+        # Debug Monitor
+        "debug_monitor": "Debug Monitor",
+        "today_errors": "Today's Errors",
+        "view_details": "View Details",
+        "close_dashboard": "Close Dashboard",
+        "error_details": "Error Details",
+        "view_stack": "View Stack",
+        "view_similar": "View Similar",
+        "close": "Close",
+        "error_analytics": "Error Analytics",
+        "total_errors": "Total Errors",
+        "error_types": "Error Types",
+        "critical_errors": "Critical",
+        "most_frequent": "Most Frequent",
+        "error_trend": "Error Trend",
+        "error_list": "Error List",
+        "no_errors": "No errors recorded",
+        "error_time": "Time",
+        "error_type": "Type",
+        "error_message": "Message",
+        "error_file": "File",
+        "error_line": "Line",
+        "error_severity": "Severity",
+        
+        # Project Scaffolding
+        "scaffolding_launcher": "Automated Project Scaffolding",
+        "project_name": "Project Name",
+        "project_name_placeholder": "e.g., my_awesome_project",
+        "project_name_help": "Enter project name, system will auto-create standard P3 structure",
+        "business_doc_upload": "Business Document Upload",
+        "drag_drop_doc": "Drag and drop or click to upload",
+        "file_uploaded": "File uploaded",
+        "preview": "Preview",
+        "project_plan": "Project Plan",
+        "apply_to_project_plan": "Apply to Project Plan",
+        "plan_updated": "Plan updated",
+        "current_plan": "Current Plan",
+        "plan_placeholder": "Plan content will appear after document upload...",
+        "create_and_launch": "Create & Launch",
+        "error_no_project_name": "Please enter project name",
+        "project_created": "Project {} created successfully!",
+        "created_files": "Created Files",
+        "auto_focusing_project": "Auto-focusing on new project...",
+        "project_auto_focused": "Project auto-focused",
+        "project_creation_failed": "Project creation failed: {}",
         # 占位符文本 / Placeholder text
         "placeholder_file": "src/your_module.py",
         "placeholder_task": "User Login Module",

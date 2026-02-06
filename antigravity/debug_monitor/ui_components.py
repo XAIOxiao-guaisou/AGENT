@@ -92,7 +92,7 @@ class ErrorUI:
             st.metric(
                 "总错误数 / Total Errors",
                 len(errors),
-                help="过去 {} 天的错误总数 / Total errors in last {} days".format(days, days)
+                help=f"过去 {days} 天的错误总数 / Total errors in last {days} days"
             )
         
         with col2:
@@ -258,13 +258,31 @@ def show_debug_panel():
     # Show popup if errors exist / 如果存在错误则显示弹窗
     ui.show_error_popup()
     
+    # Detect project switch / 检测项目切换
+    current_project = st.session_state.get("active_project_root")
+    last_project = st.session_state.get("_debug_monitor_last_project")
+    
+    # If project changed, clear error popup data / 如果项目改变,清除错误弹窗数据
+    if current_project != last_project:
+        st.session_state.error_popup_data = []
+        st.session_state._debug_monitor_last_project = current_project
+    
     # Sidebar debug info / 侧边栏调试信息
     with st.sidebar:
         with st.expander("🐛 调试监控 / Debug Monitor"):
-            today_count = storage.get_error_count()
-            st.metric("今日错误 / Today's Errors", today_count)
+            # Show current project / 显示当前项目
+            if current_project:
+                project_name = str(current_project).split("/")[-1] if "/" in str(current_project) else str(current_project).split("\\")[-1]
+                st.caption(f"📁 当前项目 / Current: **{project_name}**")
             
-            if st.button("📊 查看详情 / View Details"):
+            today_count = storage.get_error_count()
+            st.metric(
+                "今日错误 / Today's Errors",
+                today_count,
+                help="今天捕获的错误总数 / Total errors captured today"
+            )
+            
+            if st.button("📊 查看详情 / View Details", use_container_width=True):
                 st.session_state.show_debug_dashboard = True
     
     # Show dashboard if requested / 如果请求则显示仪表板

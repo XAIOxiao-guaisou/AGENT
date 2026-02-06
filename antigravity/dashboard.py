@@ -84,6 +84,37 @@ LANGUAGES = {
         "launch_project": "🔥 启动项目级开发",
         "error_no_files": "❌ 请输入项目文件列表",
         "project_launched": "🎯 项目已发射! 共 {} 个文件",
+        # P3 项目脚手架 / P3 Project Scaffolding
+        "scaffolding_launcher": "🚀 项目全自动发射台",
+        "project_name": "项目名称",
+        "project_name_placeholder": "例如: XhsDataScraper",
+        "project_name_help": "系统将为您自动创建独立目录",
+        "error_no_project_name": "❌ 请输入项目名称",
+        "project_structure": "项目内部结构",
+        "project_structure_help": "每行一个文件路径 (相对路径)",
+        "project_structure_placeholder": "main.py\nutils/parser.py\nconfig.json\ntests/test_main.py",
+        "business_doc_upload": "📤 业务文档上传",
+        "drag_drop_doc": "拖拽上传业务文档 (.txt/.md)",
+        "apply_to_project_plan": "应用到项目计划",
+        "project_plan": "📜 项目计划",
+        "current_plan": "当前计划",
+        "plan_placeholder": "# 项目计划\n\n请上传业务文档或手动编辑...",
+        "create_and_launch": "🔥 创建项目并启动全自动接管",
+        "error_no_structure": "❌ 请定义项目结构",
+        "project_created": "✅ 项目 `{}` 已在独立文件夹中初始化成功!",
+        "created_files": "📋 已创建文件",
+        "project_auto_takeover": "🌐 Monitor 将在 3 秒后检测到新项目并自动接管",
+        "project_creation_failed": "❌ 项目创建失败: {}",
+        # 项目配置 / Project Config
+        "project_config": "⚙️ 项目配置",
+        "allowed_roots": "允许的代码根目录 (用逗号分隔)",
+        "allowed_roots_help": "出于安全考虑,Agent 只能在这些指定的目录下创建文件。例如: src, tests, docs",
+        "current_allowed": "当前允许的路径前缀: {}",
+        "drag_upload_hint": "(支持拖拽上传)",
+        "unauthorized_path": "⚠️ 跳过未授权路径: {}\n(请在侧边栏配置中添加该目录)",
+        "no_files_created": "没有创建任何新文件（可能路径不合法或文件已存在）。",
+        "files_created_list": "📋 已创建文件列表",
+        "monitor_will_detect": "🌐 Monitor 将在约 3 秒后检测到这些文件并触发项目级同步...",
         # P3 性能监控 / P3 Performance Monitor
         "p3_monitor": "📊 P3 性能监控",
         "total_operations": "总操作数",
@@ -183,6 +214,27 @@ LANGUAGES = {
         "launch_project": "🔥 Launch Project Development",
         "error_no_files": "❌ Please enter project file list",
         "project_launched": "🎯 Project launched! {} files created",
+        # P3 Project Scaffolding
+        "scaffolding_launcher": "🚀 Automated Project Scaffolding",
+        "project_name": "Project Name",
+        "project_name_placeholder": "e.g: XhsDataScraper",
+        "project_name_help": "System will auto-create dedicated directory",
+        "error_no_project_name": "❌ Please enter project name",
+        "project_structure": "Internal Structure",
+        "project_structure_help": "One file path per line (relative paths)",
+        "project_structure_placeholder": "main.py\\nutils/parser.py\\nconfig.json\\ntests/test_main.py",
+        "business_doc_upload": "📤 Business Document Upload",
+        "drag_drop_doc": "Drag & Drop Document (.txt/.md)",
+        "apply_to_project_plan": "Apply to Project Plan",
+        "project_plan": "📜 Project Plan",
+        "current_plan": "Current Plan",
+        "plan_placeholder": "# Project Plan\\n\\nPlease upload business document or edit manually...",
+        "create_and_launch": "🔥 Create Project & Launch Auto-Takeover",
+        "error_no_structure": "❌ Please define project structure",
+        "project_created": "✅ Project `{}` initialized successfully in dedicated folder!",
+        "created_files": "📋 Created Files",
+        "project_auto_takeover": "🌐 Monitor will detect new project in ~3s and auto-takeover",
+        "project_creation_failed": "❌ Project creation failed: {}",
     }
 }
 
@@ -248,6 +300,28 @@ if st.sidebar.button(t("check_deps")):
             st.sidebar.warning(t("missing_deps").format(', '.join(missing)))
         else:
             st.sidebar.success(t("all_deps_ok"))
+
+# ===========================
+# Project Configuration
+# ===========================
+st.sidebar.markdown("---")
+st.sidebar.subheader(t("project_config"))
+
+# 让用户自定义允许的代码根目录
+# Allow users to customize allowed code root directories
+allowed_roots_input = st.sidebar.text_input(
+    t("allowed_roots"),
+    value="src, tests",
+    help=t("allowed_roots_help")
+)
+
+# 处理输入,生成标准化的目录前缀列表
+# Process input to generate standardized directory prefix list
+ALLOWED_ROOTS = [root.strip() + "/" for root in allowed_roots_input.split(",") if root.strip()]
+st.sidebar.caption(t("current_allowed").format(', '.join(ALLOWED_ROOTS)))
+
+# Store in session state for use in project launcher
+st.session_state.allowed_roots = ALLOWED_ROOTS
 
 # System Status
 st.sidebar.subheader(t("status"))

@@ -34,35 +34,44 @@ with col1:
     except Exception as e:
         st.error(f"Error reading tasks: {e}")
 
-with col2:
-    st.subheader("🔍 Live Audit Log")
+    with col2:
+    st.subheader("🔍 Live Audit & Executor Log")
     log_area = st.empty()
     
     def tail_logs():
         if os.path.exists("vibe_audit.log"):
             try:
                 with open("vibe_audit.log", "r", encoding='utf-8') as f:
-                    return f.readlines()[-20:] # Last 20 lines
+                    lines = f.readlines()
+                    # Reverse to show newest first
+                    return lines[::-1][:50] 
             except Exception:
                 return []
-        return ["Waiting for audit signals..."]
+        return ["Waiting for agent signals..."]
 
-    # Auto-refresh loop using Streamlit reruns usually controlled by outside env, 
-    # but here we use a placeholder update loop if running in script mode, 
-    # actually Streamlit handles refresh via interaction. 
-    # For auto-refresh, we can use empty + sleep, but native Streamlit way is st.empty()
+    # Dashboard Loop
+    log_lines = tail_logs()
     
-    logs = tail_logs()
-    log_content = "".join(logs)
-    
-    # Simple color highlighting
-    if "[SYSTEM CRITICAL]" in log_content:
-        st.error("⚠️ SYSTEM CRITICAL ERROR DETECTED")
-    
-    log_content = log_content.replace("[SYSTEM CRITICAL]", "🔴 **[SYSTEM CRITICAL]**")
-    log_content = log_content.replace("STATUS: PASS", "🟢 **STATUS: PASS**")
-    
-    log_area.markdown(f"{log_content}")
+    # Process logs for events
+    retry_count = 0
+    for line in log_lines:
+        if "Verification Attempt" in line: # Need to log this in monitor.py or auditor.py to see it here? 
+            # Actually monitor prints to stdout. We should redirect stdout or log to file.
+            pass
+
+    # Render
+    content = ""
+    for line in log_lines:
+        if "[SYSTEM CRITICAL]" in line:
+            content += f"🔴 {line}  \n"
+        elif "STATUS: PASS" in line:
+            content += f"🟢 {line}  \n"
+        elif "[AGENT TAKEOVER]" in line:
+            content += f"✨ **{line.strip()}**  \n"
+        else:
+            content += f"{line}  \n"
+            
+    log_area.markdown(content)
 
     if st.button("Refresh Logs"):
         st.rerun()

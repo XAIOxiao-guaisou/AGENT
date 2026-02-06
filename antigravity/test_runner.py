@@ -16,19 +16,25 @@ def run_tests_for_file(file_path):
     print(f"Running tests: {test_target}")
     try:
         # Run pytest
-        result = subprocess.run(["pytest", test_target], capture_output=True, text=True)
+        result = subprocess.run(
+            ["python", "-m", "pytest", test_target],
+            capture_output=True,
+            text=True,
+            check=False # Don't raise exception, just return code
+        )
+
         if result.returncode == 0:
-            print("Tests passed.")
-            return True
+            print(f"\033[92mTests Passed: {test_target}\033[0m")
+            return True, result.stdout
         else:
-            print("Tests failed!")
-            print(result.stdout)
+            print(f"\033[91mTests Failed: {test_target}\033[0m")
             # Check if critical failure (e.g., all tests failed or specific critical marker)
             # For this demo, any failure triggers rollback consideration (simplified)
-            return False
-    except FileNotFoundError:
-        print("pytest not found. Please ensure pytest is installed.")
-        return False
+            return False, result.stdout + result.stderr
+
+    except Exception as e:
+        print(f"Error running tests: {e}")
+        return False, str(e)
 
 def auto_rollback():
     """

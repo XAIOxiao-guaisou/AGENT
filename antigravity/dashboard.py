@@ -573,69 +573,83 @@ st.sidebar.markdown(f"{status_colors.get(takeover_status, '⚪')} **{takeover_st
 last_update = system_status.get("last_update", "Never")
 st.sidebar.caption(t("last_update").format(last_update[:19] if last_update != 'Never' else 'Never'))
 
-# Main Area
-col1, col2 = st.columns([1, 2])
-
-with col1:
-    st.subheader(t("recent_audits"))
+# --- Audit Log Section (Conditional Display) ---
+# Only show when actively using task launcher or project scaffolding
+if st.session_state.get('show_audit_logs', False):
+    col1, col2 = st.columns(2)
     
-    audits = state_mgr.get_recent_audits(limit=20)
+    with col1:
+        # Wrap in expander to avoid filling the window
+        audits = state_mgr.get_recent_audits(limit=20)
+        
+        # Header with clear button
+        header_col1, header_col2 = st.columns([3, 1])
+        with header_col1:
+            st.markdown(f"### 📋 {t('recent_audits')} ({len(audits)})")
+        with header_col2:
+            if st.button("🗑️ 清空", key="clear_audits_btn", help="清空所有审计日志"):
+                try:
+                    # Clear audit logs in state manager
+                    state_mgr.audit_log = []
+                    state_mgr.save_state()
+                    st.success("✅ 审计日志已清空")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"清空失败: {e}")
+        
+        with st.expander(f"展开查看详情", expanded=False):
+            if audits:
+                for audit in reversed(audits[-15:]):  # Last 15
+                    file_name = audit.get("file_path", "Unknown").split("/")[-1]
+                    event_type = audit.get("event_type", "unknown")
+                    timestamp = audit.get("timestamp", "")[:19]
+                    status = audit.get("status", "INFO")
+                    
+                    # Status icon
+                    icon = {
+                        "SUCCESS": "✅",
+                        "ERROR": "❌",
+                        "WARNING": "⚠️",
+                        "INFO": "ℹ️"
+                    }.get(status, "📝")
+                    
+                    with st.expander(f"{icon} {file_name} - {event_type}", expanded=False):
+                        st.caption(f"⏰ {timestamp}")
+                        st.text(audit.get("message", "")[:200])
+            else:
+                st.info(t("no_activity"))
     
-    # Wrap in expander to avoid filling the window
-    with st.expander(f"📋 {t('recent_audits')} ({len(audits)})", expanded=False):
+    with col2:
+        st.subheader(t("live_log"))
+        
+        # Display structured audit data
         if audits:
-            for audit in reversed(audits[-15:]):  # Last 15
-                file_name = audit.get("file_path", "Unknown").split("/")[-1]
-                event_type = audit.get("event_type", "unknown")
-                timestamp = audit.get("timestamp", "")[:19]
-                status = audit.get("status", "INFO")
-                
-                # Status icon
-                icon = {
-                    "SUCCESS": "✅",
-                    "ERROR": "❌",
-                    "WARNING": "⚠️",
-                    "INFO": "ℹ️"
-                }.get(status, "📝")
-                
-                with st.expander(f"{icon} {file_name} - {event_type}", expanded=False):
-                    st.caption(f"⏰ {timestamp}")
-                    st.text(audit.get("message", "")[:200])
+            # Create a table view
+            import pandas as pd
+            
+            df_data = []
+            for audit in reversed(audits[-10:]):  # Last 10
+                df_data.append({
+                    t("col_time"): audit.get("timestamp", "")[:19],
+                    t("col_file"): audit.get("file_path", ""),
+                    t("col_event"): audit.get("event_type", ""),
+                    t("col_status"): audit.get("status", "")
+                })
+            
+            if df_data:
+                df = pd.DataFrame(df_data)
+                st.dataframe(df, use_container_width=True, hide_index=True)
         else:
             st.info(t("no_activity"))
-
-
-with col2:
-    st.subheader(t("live_log"))
-    
-    # Display structured audit data
-    if audits:
-        # Create a table view
-        import pandas as pd
         
-        df_data = []
-        for audit in reversed(audits[-10:]):  # Last 10
-            df_data.append({
-                t("col_time"): audit.get("timestamp", "")[:19],
-                t("col_file"): audit.get("file_path", ""),
-                t("col_event"): audit.get("event_type", ""),
-                t("col_status"): audit.get("status", "")
-            })
-        
-        if df_data:
-            df = pd.DataFrame(df_data)
-            st.dataframe(df, use_container_width=True, hide_index=True)
-    else:
-        st.info(t("no_activity"))
-    
-    # Show last error if any
-    last_error = system_status.get("last_error_log")
-    if last_error:
-        st.error(t("last_error"))
-        st.code(last_error[:500], language="text")
+        # Show last error if any
+        last_error = system_status.get("last_error_log")
+        if last_error:
+            st.error(t("last_error"))
+            st.code(last_error[:500], language="text")
+
 
 # --- Task Launcher Section ---
-st.markdown("---")
 st.header(t("task_launcher"))
 
 with st.container():
@@ -650,27 +664,18 @@ with st.container():
         )
         task_name = st.text_input(
             t("task_name"), 
-            placeholder=t("placeholder_task"),
-            help=t("task_name_help")
+            placeholder=t("placeholder_task")
         )
         
         # Auto-create test file option
-        create_test = st.checkbox(t("auto_test"), value=True)
+        create_test = st.checkbox(t("create_test"), value=True)
         
     with t_col2:
-        st.subheader(t("plan_details"))
+        st.subheader(t("task_plan"))
         
         # Read current PLAN.md as template
-        default_plan = ""
-        if os.path.exists("PLAN.md"):
-            try:
-                with open("PLAN.md", "r", encoding='utf-8') as f:
-                    default_plan = f.read()
-            except Exception:
-                default_plan = "# Task Plan\n\n## Target File\n\n## Core Logic\n\n## Technical Requirements\n"
         
         task_plan = st.text_area(
-            t("plan_help"), 
             value=default_plan, 
             height=250,
             label_visibility="collapsed"
@@ -763,7 +768,6 @@ if __name__ == '__main__':
 # 项目级发射台 (P1)
 # ============================================================
 # --- P3: Automated Project Scaffolding (项目全自动发射台) ---
-st.markdown("---")
 st.header("🚀 " + t("scaffolding_launcher"))
 
 with st.container():
@@ -777,6 +781,7 @@ with st.container():
             help=t("project_name_help"),
             key="p3_project_name"
         )
+
         
         st.info("ℹ️ 系统将自动创建标准 P3 项目结构")
         st.caption("包含: main.py, core/, utils/, config/, tests/, data/")
@@ -819,6 +824,9 @@ with st.container():
 
     # 4. One-Click Create & Launch
     if st.button(t("create_and_launch"), type="primary", use_container_width=True, key="p3_create_btn"):
+        # Enable audit log display
+        st.session_state.show_audit_logs = True
+        
         if not project_name:
             st.error(t("error_no_project_name"))
         else:

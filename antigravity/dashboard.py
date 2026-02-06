@@ -195,6 +195,10 @@ LANGUAGES = {
         "total_time": "总耗时",
         "slowest_operations": "最慢操作",
         "no_operations": "暂无操作记录",
+        "operation": "操作",
+        "calls": "调用次数",
+        "perf_not_available": "性能监控在全局模式下不可用",
+        "switch_to_project": "请切换到具体项目以查看性能数据",
         "token_usage": "Token 使用估算",
         "recent_executions": "最近执行",
         "success_rate": "成功率",
@@ -393,6 +397,48 @@ LANGUAGES = {
         "issues_found": "Issues Found",
         "recommendations": "Recommendations",
         "generating_docs": "Generating project documentation...",
+        
+        # Performance Monitor
+        "performance_monitor": "Performance Monitor",
+        "performance_stats": "Performance Stats",
+        "total_operations": "Total Operations",
+        "total_calls": "Total Calls",
+        "avg_time": "Avg Time",
+        "total_time": "Total Time",
+        "slowest_operations": "Slowest Operations",
+        "no_operations": "No operations recorded yet",
+        "operation": "Operation",
+        "calls": "Calls",
+        "perf_not_available": "Performance monitor not available in Global mode",
+        "switch_to_project": "Please switch to a specific project to view performance data",
+        "token_usage": "Token Usage Estimation",
+        "recent_executions": "Recent Executions",
+        "success_rate": "Success Rate",
+        
+        # 项目配置 / Project Config
+        "project_config": "⚙️ Project Config",
+        "allowed_roots": "Allowed Code Root Directories (comma-separated)",
+        "allowed_roots_help": "For security, Agent can only create files in these specified directories. E.g., src, tests, docs",
+        "current_allowed": "Current allowed path prefixes: {}",
+        "drag_upload_hint": "(Drag & drop upload supported)",
+        "unauthorized_path": "⚠️ Skipping unauthorized path: {}\n(Please add this directory in sidebar config)",
+        "no_files_created": "No new files created (path might be invalid or file already exists).",
+        "files_created_list": "📋 Created Files List",
+        "monitor_will_detect": "🌐 Monitor will detect these files in ~3 seconds and trigger project-level sync...",
+        # P3 性能监控 / P3 Performance Monitor
+        "p3_monitor": "📊 P3 Performance Monitor",
+        "total_operations_help": "Total number of operations monitored",
+        "total_calls_help": "Total calls across all operations",
+        "total_time_help": "Total time spent across all operations",
+        "token_estimated": "Estimated: {}/{} tokens ({:.1f}%) | PLAN: {} | Output: {}",
+        "token_high": "⚠️ High token usage. Consider reducing PLAN.md complexity or using incremental sync.",
+        "token_moderate": "ℹ️ Moderate token usage. P3 optimization helps reduce context size.",
+        "token_healthy": "✅ Healthy token usage. P3 optimization is working well.",
+        "token_error": "Token estimation failed: {}",
+        "plan_not_found": "PLAN.md not found. Token estimation unavailable.",
+        "no_recent_exec": "No recent executions recorded.",
+        "perf_monitor_unavailable": "Performance monitor unavailable: {}",
+        "perf_data_error": "Failed to load performance data: {}",
     }
 }
 
@@ -618,7 +664,7 @@ if selected_project != "Global (Legacy)":
                         st.text(rec)
     
     with col2:
-        if st.button(t("generate_docs"), use_container_width=True):
+        if st.button(t("generate_docs_button"), use_container_width=True):
             from antigravity.doc_generator import DocGenerator
             
             with st.spinner(t("generating_docs")):
@@ -771,14 +817,14 @@ with st.container():
         )
         
         # Auto-create test file option
-        create_test = st.checkbox(t("create_test"), value=True)
+        create_test = st.checkbox(t("auto_test"), value=True)
         
     with t_col2:
-        st.subheader(t("task_plan"))
+        st.subheader(t("plan_details"))
         
         task_plan = st.text_area(
-            t("plan_content"),
-            placeholder=t("placeholder_plan"),
+            t("plan_details"),
+            placeholder=t("plan_placeholder"),
             height=200,
             help=t("plan_help")
         )
@@ -1055,9 +1101,11 @@ from antigravity.debug_monitor import enable_monitoring, show_debug_panel
 enable_monitoring()
 
 from antigravity.p3_state_manager import P3StateManager
-from antigravity.vibe_check import VibeCheck
+from antigravity.vibe_check import VibeChecker
 from antigravity.performance_monitor import PerformanceMonitor
-test.TestCase):
+from core.{project_name.lower()}_core import {project_name}Core
+
+class Test{project_name}Core(unittest.TestCase):
     def setUp(self):
         self.core = {project_name}Core()
     

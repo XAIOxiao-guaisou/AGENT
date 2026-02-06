@@ -38,7 +38,9 @@ class ErrorUI:
         Displays errors stored in session state.
         显示存储在会话状态中的错误。
         """
+        # Initialize error_popup_data if not exists
         if "error_popup_data" not in st.session_state:
+            st.session_state.error_popup_data = []
             return
         
         errors = st.session_state.error_popup_data
@@ -264,21 +266,41 @@ def show_debug_panel():
     
     # If project changed, clear error popup data / 如果项目改变,清除错误弹窗数据
     if current_project != last_project:
-        st.session_state.error_popup_data = []
+        if "error_popup_data" in st.session_state:
+            st.session_state.error_popup_data = []
         st.session_state._debug_monitor_last_project = current_project
     
     # Sidebar debug info / 侧边栏调试信息
     with st.sidebar:
-        with st.expander("🐛 调试监控 / Debug Monitor"):
+        with st.expander("🐛 调试监控 / Debug Monitor", expanded=False):
             # Show current project / 显示当前项目
-            if current_project:
-                project_name = str(current_project).split("/")[-1] if "/" in str(current_project) else str(current_project).split("\\")[-1]
+            if current_project and current_project != "Global (Legacy)":
+                # Extract project name from path
+                project_path = str(current_project)
+                if "/" in project_path:
+                    project_name = project_path.split("/")[-1]
+                elif "\\\\" in project_path:
+                    project_name = project_path.split("\\\\")[-1]
+                else:
+                    project_name = project_path
                 st.caption(f"📁 当前项目 / Current: **{project_name}**")
+            else:
+                st.caption("📁 当前项目 / Current: **全局模式 / Global**")
             
-            today_count = storage.get_error_count()
+            # Get error count
+            try:
+                today_count = storage.get_error_count()
+            except Exception as e:
+                today_count = 0
+                st.caption(f"⚠️ 错误计数失败 / Count failed: {str(e)[:30]}")
+            
+            # Show metric with delta indicator
+            delta_color = "off" if today_count == 0 else "inverse"
             st.metric(
                 "今日错误 / Today's Errors",
                 today_count,
+                delta="✅ 无错误" if today_count == 0 else f"🔴 {today_count} 个错误",
+                delta_color=delta_color,
                 help="今天捕获的错误总数 / Total errors captured today"
             )
             

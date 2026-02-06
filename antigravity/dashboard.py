@@ -1044,18 +1044,11 @@ if perf_monitor:
             st.info(t("no_activity"))
     
     except Exception as e:
-        st.error(f"Performance monitor error: {e}")
-else:
-    # Fallback: Try to initialize performance monitor
-    try:
-        from antigravity.performance_monitor import PerformanceMonitor
-        perf_monitor = PerformanceMonitor(str(active_project_root))
-        st.session_state.perf_monitor = perf_monitor
-        st.rerun()
-    except Exception as e:
         st.warning(f"⚠️ Performance metrics unavailable: {str(e)}")
-        st.info(f"📊 Performance monitoring not available for {project_name} mode")
-        st.caption("Switch to a project to enable performance tracking")
+else:
+    st.info(f"📊 Performance monitoring not available for {project_name} mode")
+    st.caption("Switch to a project to enable performance tracking")
+
 
 
 # ============================================================

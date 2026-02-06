@@ -19,15 +19,18 @@ Usage / 使用方法:
 from .error_tracker import ErrorTracker, monitor, track
 from .alert_manager import AlertManager
 from .storage import ErrorStorage
+from .ui_components import ErrorUI, show_debug_panel
 
 __version__ = "1.0.0"
 __all__ = [
     "ErrorTracker",
     "AlertManager", 
     "ErrorStorage",
+    "ErrorUI",
     "monitor",
     "track",
-    "enable_monitoring"
+    "enable_monitoring",
+    "show_debug_panel"
 ]
 
 # Global instances / 全局实例

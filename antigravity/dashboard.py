@@ -947,9 +947,14 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from core.{project_name.lower()}_core import {project_name}Core
+# Enable debug monitoring / 启用调试监控
+from antigravity.debug_monitor import enable_monitoring, show_debug_panel
+enable_monitoring()
 
-class Test{project_name}Core(unittest.TestCase):
+from antigravity.p3_state_manager import P3StateManager
+from antigravity.vibe_check import VibeCheck
+from antigravity.performance_monitor import PerformanceMonitor
+test.TestCase):
     def setUp(self):
         self.core = {project_name}Core()
     

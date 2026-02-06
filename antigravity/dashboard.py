@@ -5,6 +5,15 @@ import os
 from antigravity.state_manager import StateManager
 from antigravity.config import CONFIG
 
+# Enable debug monitoring / 启用调试监控
+try:
+    from antigravity.debug_monitor import enable_monitoring, show_debug_panel
+    enable_monitoring()
+    DEBUG_MONITOR_ENABLED = True
+except Exception as e:
+    DEBUG_MONITOR_ENABLED = False
+    print(f"Debug monitor initialization failed: {e}")
+
 # 语言配置 / Language Configuration
 LANGUAGES = {
     "zh": {
@@ -1322,6 +1331,13 @@ with st.container():
 # Auto-refresh every 5 seconds
 st.markdown("---")
 st.caption(t("powered_by"))
+
+# --- Debug Monitoring Panel / 调试监控面板 ---
+if DEBUG_MONITOR_ENABLED:
+    try:
+        show_debug_panel()
+    except Exception as e:
+        st.sidebar.error(f"Debug panel error: {e}")
 
 # Add auto-refresh script
 st.markdown("""

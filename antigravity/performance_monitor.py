@@ -25,7 +25,14 @@ class PerformanceMonitor:
     Track execution time and performance metrics of key functions
     """
     
-    def __init__(self):
+    def __init__(self, project_root: str = None):
+        """
+        Initialize Performance Monitor
+        
+        Args:
+            project_root: Optional project root path for project-scoped monitoring
+        """
+        self.project_root = project_root
         self.metrics = {}  # {operation_name: [durations]}
         self.call_counts = {}  # {operation_name: count}
         self.last_execution = {}  # {operation_name: timestamp}
@@ -241,8 +248,70 @@ class PerformanceMonitor:
                     "success_rate": stats["success_rate"]
                 }
                 for op, stats in all_stats.items()
-            ]
-        }
+            ]\r
+        }\r
+    \r
+    def get_summary(self) -> Dict:\r
+        """\r
+        Get summary of performance metrics (alias for get_dashboard_data)\r
+        For backward compatibility with dashboard\r
+        \r
+        Returns:\r
+            Performance summary dictionary\r
+        """\r
+        dashboard_data = self.get_dashboard_data()\r
+        \r
+        # Calculate average time across all operations\r
+        all_stats = self.get_stats()\r
+        total_time = sum(s["total_time"] for s in all_stats.values()) if all_stats else 0\r
+        total_calls = sum(s["call_count"] for s in all_stats.values()) if all_stats else 0\r
+        avg_time = total_time / total_calls if total_calls > 0 else 0\r
+        \r
+        return {\r
+            "total_operations": dashboard_data["total_operations"],\r
+            "total_calls": total_calls,\r
+            "total_time": total_time,\r
+            "average_time": avg_time,\r
+            "slowest_operations": [\r
+                {\r
+                    "operation": op["operation"],\r
+                    "avg_time": op["avg_time"],\r
+                    "calls": op["call_count"]\r
+                }\r
+                for op in dashboard_data["top_slowest"]\r
+            ]\r
+        }\r
+    \r
+    def get_recent_operations(self, limit: int = 10) -> List[Dict]:\r
+        """\r
+        Get recent operations for dashboard display\r
+        \r
+        Args:\r
+            limit: Maximum number of operations to return\r
+        \r
+        Returns:\r
+            List of recent operation dictionaries\r
+        """\r
+        all_stats = self.get_stats()\r
+        \r
+        # Sort by last execution time\r
+        sorted_ops = sorted(\r
+            all_stats.items(),\r
+            key=lambda x: x[1].get("last_execution", ""),\r
+            reverse=True\r
+        )\r
+        \r
+        return [\r
+            {\r
+                "operation": op,\r
+                "duration": stats["avg_time"],\r
+                "calls": stats["call_count"],\r
+                "success_rate": stats["success_rate"],\r
+                "last_execution": stats["last_execution"]\r
+            }\r
+            for op, stats in sorted_ops[:limit]\r
+        ]\r
+
 
 
 # 全局实例

@@ -10,6 +10,7 @@ from antigravity.auditor import Auditor
 from antigravity.test_runner import run_tests_for_file
 from antigravity.config import CONFIG
 from antigravity.state_manager import StateManager
+from antigravity.change_detector import ChangeDetector
 
 class AntigravityMonitor(FileSystemEventHandler):
     def __init__(self, project_root):

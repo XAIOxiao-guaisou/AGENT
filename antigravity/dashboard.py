@@ -591,6 +591,131 @@ else:
 if st.button(t("refresh")):
     st.rerun()
 
+# ============================================================
+# P3: Performance Monitoring (性能监控)
+# ============================================================
+
+st.markdown("---")
+st.header("📊 P3 Performance Monitor")
+
+with st.container():
+    # 导入性能监控器
+    try:
+        from antigravity.performance_monitor import perf_monitor
+        from antigravity.context_manager import ContextManager
+        
+        # 获取 Dashboard 数据
+        dashboard_data = perf_monitor.get_dashboard_data()
+        
+        # 性能统计卡片
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric(
+                label="Total Operations",
+                value=dashboard_data.get('total_operations', 0),
+                help="已监控的操作总数"
+            )
+        
+        with col2:
+            st.metric(
+                label="Total Calls",
+                value=dashboard_data.get('total_calls', 0),
+                help="所有操作的总调用次数"
+            )
+        
+        with col3:
+            total_time = dashboard_data.get('total_time', 0)
+            st.metric(
+                label="Total Time",
+                value=f"{total_time:.2f}s",
+                help="所有操作的总耗时"
+            )
+        
+        # 最慢操作排行
+        st.subheader("⏱️ Slowest Operations")
+        
+        top_slowest = dashboard_data.get('top_slowest', [])
+        if top_slowest:
+            for i, op in enumerate(top_slowest[:5], 1):
+                col_rank, col_name, col_time, col_calls = st.columns([0.5, 3, 1.5, 1])
+                
+                with col_rank:
+                    st.text(f"#{i}")
+                
+                with col_name:
+                    st.text(op['operation'])
+                
+                with col_time:
+                    st.text(f"{op['avg_time']:.3f}s avg")
+                
+                with col_calls:
+                    st.text(f"{op['call_count']} calls")
+        else:
+            st.info("No performance data collected yet. Operations will appear here after execution.")
+        
+        # Token 使用估算
+        st.subheader("🎯 Token Usage Estimation")
+        
+        # 读取 PLAN.md 估算
+        plan_path = os.path.join(os.getcwd(), "PLAN.md")
+        if os.path.exists(plan_path):
+            try:
+                with open(plan_path, 'r', encoding='utf-8') as f:
+                    plan_content = f.read()
+                
+                # 使用 ContextManager 估算
+                ctx_mgr = ContextManager(max_tokens=16384)
+                plan_tokens = ctx_mgr.count_tokens(plan_content)
+                estimated_output = ctx_mgr.estimate_output_tokens(plan_content)
+                
+                # 进度条
+                max_tokens = 16384
+                total_estimated = plan_tokens + estimated_output
+                usage_ratio = min(total_estimated / max_tokens, 1.0)
+                
+                st.progress(usage_ratio)
+                st.caption(f"Estimated: {total_estimated}/{max_tokens} tokens ({usage_ratio*100:.1f}%) | PLAN: {plan_tokens} | Output: {estimated_output}")
+                
+                # 警告
+                if usage_ratio > 0.9:
+                    st.warning("⚠️ Token usage is very high. Consider reducing PLAN.md complexity or using incremental sync.")
+                elif usage_ratio > 0.75:
+                    st.info("ℹ️ Token usage is moderate. P3 optimization will help reduce context size.")
+                else:
+                    st.success("✅ Token usage is healthy. P3 optimization is working well.")
+                
+            except Exception as e:
+                st.error(f"Failed to estimate tokens: {e}")
+        else:
+            st.info("PLAN.md not found. Token estimation unavailable.")
+        
+        # 最近执行
+        st.subheader("🕐 Recent Executions")
+        
+        recent = dashboard_data.get('recent_executions', [])
+        if recent:
+            for exec_info in recent[:5]:
+                col_op, col_time, col_rate = st.columns([3, 2, 1.5])
+                
+                with col_op:
+                    st.text(exec_info['operation'])
+                
+                with col_time:
+                    st.text(exec_info.get('last_execution', 'N/A')[:19])
+                
+                with col_rate:
+                    rate = exec_info.get('success_rate', 0)
+                    color = "🟢" if rate >= 90 else "🟡" if rate >= 70 else "🔴"
+                    st.text(f"{color} {rate:.0f}%")
+        else:
+            st.info("No recent executions.")
+    
+    except ImportError as e:
+        st.warning(f"Performance monitor not available: {e}")
+    except Exception as e:
+        st.error(f"Error loading performance data: {e}")
+
 # Auto-refresh every 5 seconds
 st.markdown("---")
 st.caption(t("powered_by"))

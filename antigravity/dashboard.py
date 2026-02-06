@@ -760,142 +760,268 @@ if __name__ == '__main__':
 # Project-Level Launcher (P1)
 # 项目级发射台 (P1)
 # ============================================================
-
+# --- P3: Automated Project Scaffolding (项目全自动发射台) ---
 st.markdown("---")
-st.header(t("project_launcher"))
+st.header("🚀 " + t("scaffolding_launcher"))
 
 with st.container():
     p_col1, p_col2 = st.columns([1, 2])
     
     with p_col1:
-        st.subheader(t("project_files"))
-        
-        # 多文件输入 / Multi-file input
-        project_files_input = st.text_area(
-            t("project_files_help"),
-            placeholder="src/main.py\nsrc/utils.py\nsrc/config.py",
-            height=150,
-            key="project_files_input"
+        # 1. Project Name Input (ONLY input needed!)
+        project_name = st.text_input(
+            t("project_name"),
+            placeholder=t("project_name_placeholder"),
+            help=t("project_name_help"),
+            key="p3_project_name"
         )
         
-        # 文件上传 / File upload
-        st.subheader(t("upload_plan"))
+        st.info("ℹ️ 系统将自动创建标准 P3 项目结构")
+        st.caption("包含: main.py, core/, utils/, config/, tests/, data/")
+        
+        # 2. Drag-Drop Upload (Optional)
+        st.subheader(t("business_doc_upload"))
         uploaded_file = st.file_uploader(
-            t("upload_plan_help"),
+            t("drag_drop_doc"),
             type=['txt', 'md'],
-            key="plan_uploader"
+            key="p3_doc_uploader"
         )
         
         if uploaded_file:
             content = uploaded_file.read().decode('utf-8')
             st.success(t("file_uploaded"))
-            
-            # 预览 / Preview
             with st.expander(t("preview")):
                 st.text(content[:500] + "..." if len(content) > 500 else content)
             
-            # 应用到 PLAN.md / Apply to PLAN.md
-            if st.button(t("apply_to_plan"), key="apply_plan_btn"):
-                try:
-                    with open("PLAN.md", "w", encoding='utf-8') as f:
-                        f.write(content)
-                    st.success(t("plan_updated"))
-                    state_mgr.log_audit(
-                        "PLAN.md",
-                        "plan_upload",
-                        f"Uploaded from {uploaded_file.name}",
-                        "INFO"
-                    )
-                    st.rerun()
-                except Exception as e:
-                    st.error(t("save_failed").format(e))
-        
-        # 重置模板 / Reset template
-        if st.button(t("reset_template"), key="reset_template_btn"):
-            try:
-                import shutil
-                if os.path.exists("config/PLAN_TEMPLATE.md"):
-                    shutil.copy("config/PLAN_TEMPLATE.md", "PLAN.md")
-                    st.success(t("template_reset"))
-                    state_mgr.log_audit(
-                        "PLAN.md",
-                        "template_reset",
-                        "Reset to default template",
-                        "INFO"
-                    )
-                    st.rerun()
-                else:
-                    st.warning("⚠️ Template file not found: config/PLAN_TEMPLATE.md")
-            except Exception as e:
-                st.error(f"Reset failed: {e}")
-    
+            # Store in session state
+            st.session_state.p3_plan_content = content
+
     with p_col2:
-        st.subheader(t("plan_template"))
+        # PLAN.md Preview
+        st.subheader(t("project_plan"))
         
-        # 显示当前 PLAN / Display current PLAN
-        if os.path.exists("PLAN.md"):
-            with open("PLAN.md", "r", encoding='utf-8') as f:
-                current_plan = f.read()
-            st.text_area(
-                t("current_plan"),
-                value=current_plan,
-                height=350,
-                disabled=True,
-                key="current_plan_display"
-            )
+        # Apply button
+        if uploaded_file and st.button(t("apply_to_project_plan"), key="p3_apply_plan"):
+            st.session_state.p3_plan_content = content
+            st.success(t("plan_updated"))
+        
+        # Display current or uploaded plan
+        plan_display = st.session_state.get('p3_plan_content', t("plan_placeholder"))
+        st.text_area(
+            t("current_plan"),
+            value=plan_display,
+            height=350,
+            disabled=True,
+            key="p3_plan_display"
+        )
+
+    # 4. One-Click Create & Launch
+    if st.button(t("create_and_launch"), type="primary", use_container_width=True, key="p3_create_btn"):
+        if not project_name:
+            st.error(t("error_no_project_name"))
         else:
-            st.info("ℹ️ PLAN.md not found. Upload a file or reset to template.")
-    
-    # 项目级启动按钮 / Project-level launch button
-    if st.button(t("launch_project"), type="primary", use_container_width=True, key="launch_project_btn"):
-        if not project_files_input.strip():
-            st.error(t("error_no_files"))
-        else:
-            files = [f.strip() for f in project_files_input.split('\n') if f.strip()]
-            
             try:
-                created_files = []
+                # ===========================
+                # P3 Core: Auto-create dedicated folder with standard structure
+                # ===========================
+                project_path = os.path.join("projects", project_name)
+                os.makedirs(project_path, exist_ok=True)
                 
-                # 创建所有占位文件 / Create all placeholder files
-                for file_path in files:
-                    # 确保路径安全 / Ensure path safety
-                    if not file_path.startswith('src/') and not file_path.startswith('tests/'):
-                        st.warning(f"⚠️ Skipping unsafe path: {file_path}")
-                        continue
+                # Standard P3 directory structure
+                standard_dirs = [
+                    "core",
+                    "utils",
+                    "config",
+                    "tests",
+                    "data"
+                ]
+                
+                for dir_name in standard_dirs:
+                    os.makedirs(os.path.join(project_path, dir_name), exist_ok=True)
+                
+                # Create PLAN.md from template
+                template_path = "PLAN.md"
+                if os.path.exists(template_path):
+                    with open(template_path, "r", encoding='utf-8') as f:
+                        template_content = f.read()
                     
-                    full_path = os.path.join(".", file_path)
+                    # Replace placeholders
+                    plan_content = template_content.replace("{{PROJECT_NAME}}", project_name)
+                    plan_content = plan_content.replace("{{MODULE_NAME}}", f"{project_name.lower()}_core")
+                    
+                    # If user uploaded a document, append it
+                    if st.session_state.get('p3_plan_content'):
+                        plan_content += f"\n\n---\n\n## 用户需求文档\n\n{st.session_state.p3_plan_content}"
+                else:
+                    plan_content = st.session_state.get('p3_plan_content', f"# {project_name} Project Plan\n\nTODO: Define requirements")
+                
+                with open(os.path.join(project_path, "PLAN.md"), "w", encoding='utf-8') as f:
+                    f.write(plan_content)
+                
+                # Create standard files
+                standard_files = {
+                    "main.py": f"""# {project_name} - Main Entry Point
+# Auto-generated by Antigravity P3
+
+from pathlib import Path
+import sys
+
+# Add project root to path
+project_root = Path(__file__).parent
+sys.path.insert(0, str(project_root))
+
+def main():
+    \"\"\"Main entry point\"\"\"
+    print(f"🚀 {project_name} starting...")
+    # TODO: Implement according to PLAN.md
+    pass
+
+if __name__ == "__main__":
+    main()
+""",
+                    "core/__init__.py": f"# {project_name} Core Module\n",
+                    f"core/{project_name.lower()}_core.py": f"""# {project_name} - Core Logic
+# Auto-generated by Antigravity P3
+
+from typing import Dict, List, Optional
+
+class {project_name}Core:
+    \"\"\"Core business logic for {project_name}\"\"\"
+    
+    def __init__(self):
+        \"\"\"Initialize core module\"\"\"
+        pass
+    
+    def process(self, data: Dict) -> Optional[Dict]:
+        \"\"\"
+        Process data according to PLAN.md requirements
+        
+        Args:
+            data: Input data dictionary
+            
+        Returns:
+            Processed result or None
+        \"\"\"
+        # TODO: Implement according to PLAN.md
+        return None
+""",
+                    "utils/__init__.py": f"# {project_name} Utilities\n",
+                    "utils/helpers.py": f"""# {project_name} - Helper Functions
+# Auto-generated by Antigravity P3
+
+from typing import Any
+from pathlib import Path
+
+def get_project_root() -> Path:
+    \"\"\"Get project root directory\"\"\"
+    return Path(__file__).parent.parent
+
+def load_config(config_path: str = "config/settings.json") -> dict:
+    \"\"\"Load configuration from JSON file\"\"\"
+    import json
+    config_file = get_project_root() / config_path
+    if config_file.exists():
+        with open(config_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {{}}
+""",
+                    "config/settings.json": f"""{{\n    "project_name": "{project_name}",\n    "version": "1.0.0",\n    "debug": true\n}}\n""",
+                    "tests/__init__.py": f"# {project_name} Tests\n",
+                    f"tests/test_{project_name.lower()}_core.py": f"""# Tests for {project_name} Core
+# Auto-generated by Antigravity P3
+
+import unittest
+import sys
+from pathlib import Path
+
+# Add project root to path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+from core.{project_name.lower()}_core import {project_name}Core
+
+class Test{project_name}Core(unittest.TestCase):
+    def setUp(self):
+        self.core = {project_name}Core()
+    
+    def test_initialization(self):
+        \"\"\"Test core module initialization\"\"\"
+        self.assertIsNotNone(self.core)
+    
+    def test_process(self):
+        \"\"\"Test process method\"\"\"
+        # TODO: Add real tests according to PLAN.md
+        result = self.core.process({{}})
+        self.assertIsNone(result)  # Placeholder
+
+if __name__ == '__main__':
+    unittest.main()
+""",
+                    "data/.gitkeep": "# Data directory\n"
+                }
+                
+                created_files = []
+                for file_path, content in standard_files.items():
+                    full_path = os.path.join(project_path, file_path)
                     os.makedirs(os.path.dirname(full_path), exist_ok=True)
                     
-                    if not os.path.exists(full_path):
-                        with open(full_path, "w", encoding='utf-8') as f:
-                            f.write(f"# Auto-generated placeholder for Antigravity\n")
-                            f.write(f"# File: {file_path}\n")
-                            f.write(f"# TODO: Implement according to PLAN.md\n\n")
-                        created_files.append(file_path)
-                        
-                        # 记录到状态管理器 / Log to state manager
-                        state_mgr.log_audit(
-                            file_path,
-                            "project_file_created",
-                            "Created placeholder for project launch",
-                            "INFO"
-                        )
+                    with open(full_path, "w", encoding='utf-8') as f:
+                        f.write(content)
+                    created_files.append(file_path)
+
                 
-                if created_files:
-                    st.balloons()
-                    st.success(t("project_launched").format(len(created_files)))
+                # Success feedback
+                st.balloons()
+                st.success(t("project_created").format(project_name))
+                
+                with st.expander(t("created_files")):
+                    for f in created_files:
+                        st.text(f"✅ projects/{project_name}/{f}")
+                
+                # P3 Phase 18: Auto-Focus on newly created project
+                st.info("🎯 " + t("auto_focusing_project"))
+                
+                # Force session state update to switch to new project
+                from pathlib import Path
+                from antigravity.p3_state_manager import P3StateManager
+                
+                project_path_obj = Path("projects") / project_name
+                
+                # Update session state
+                st.session_state.last_selected_project = None  # Force refresh
+                st.session_state.active_project_root = project_path_obj
+                
+                # Initialize components immediately
+                try:
+                    st.session_state.active_state_mgr = P3StateManager(project_path_obj)
                     
-                    # 显示创建的文件 / Show created files
-                    with st.expander("📋 Created Files"):
-                        for f in created_files:
-                            st.text(f"✅ {f}")
+                    # Try to initialize performance monitor
+                    try:
+                        from antigravity.performance_monitor import PerformanceMonitor
+                        st.session_state.active_perf_monitor = PerformanceMonitor(str(project_path_obj))
+                    except:
+                        st.session_state.active_perf_monitor = None
                     
-                    st.info("🌐 Monitor will detect these files and trigger project-level sync in ~3 seconds...")
-                else:
-                    st.warning("⚠️ No files created. Check file paths.")
+                    st.success("✅ " + t("project_auto_focused"))
+                except Exception as e:
+                    st.warning(f"⚠️ Auto-focus initialization: {e}")
+                
+                # Log to state manager
+                state_mgr.log_audit(
+                    f"projects/{project_name}",
+                    "project_scaffolding",
+                    f"Created project with {len(created_files)} files",
+                    "INFO"
+                )
+                
+                # Reactive reload to show new project
+                st.rerun()
                 
             except Exception as e:
-                st.error(t("launch_failed").format(e))
+                st.error(t("project_creation_failed").format(e))
+                import traceback
+                st.code(traceback.format_exc(), language="python")
+
 
 # Environment Check Results
 st.subheader(t("env_status"))

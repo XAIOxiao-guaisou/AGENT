@@ -84,6 +84,27 @@ LANGUAGES = {
         "launch_project": "🔥 启动项目级开发",
         "error_no_files": "❌ 请输入项目文件列表",
         "project_launched": "🎯 项目已发射! 共 {} 个文件",
+        # P3 性能监控 / P3 Performance Monitor
+        "p3_monitor": "📊 P3 性能监控",
+        "total_operations": "总操作数",
+        "total_operations_help": "已监控的操作总数",
+        "total_calls": "总调用次数",
+        "total_calls_help": "所有操作的总调用次数",
+        "total_time": "总耗时",
+        "total_time_help": "所有操作的总耗时",
+        "slowest_operations": "⏱️ 最慢操作排行",
+        "no_perf_data": "暂无性能数据。执行操作后将在此显示。",
+        "token_usage": "🎯 Token 使用估算",
+        "token_estimated": "预估: {}/{} tokens ({:.1f}%) | PLAN: {} | 输出: {}",
+        "token_high": "⚠️ Token 使用率很高。考虑减少 PLAN.md 复杂度或使用增量同步。",
+        "token_moderate": "ℹ️ Token 使用率中等。P3 优化将帮助减少上下文大小。",
+        "token_healthy": "✅ Token 使用率健康。P3 优化运行良好。",
+        "token_error": "Token 估算失败: {}",
+        "plan_not_found": "未找到 PLAN.md。Token 估算不可用。",
+        "recent_executions": "🕐 最近执行",
+        "no_recent_exec": "暂无最近执行记录。",
+        "perf_monitor_unavailable": "性能监控器不可用: {}",
+        "perf_data_error": "加载性能数据失败: {}",
     },
     "en": {
         "page_title": "Antigravity Dashboard",
@@ -596,7 +617,7 @@ if st.button(t("refresh")):
 # ============================================================
 
 st.markdown("---")
-st.header("📊 P3 Performance Monitor")
+st.header(t("p3_monitor"))
 
 with st.container():
     # 导入性能监控器
@@ -612,28 +633,28 @@ with st.container():
         
         with col1:
             st.metric(
-                label="Total Operations",
+                label=t("total_operations"),
                 value=dashboard_data.get('total_operations', 0),
-                help="已监控的操作总数"
+                help=t("total_operations_help")
             )
         
         with col2:
             st.metric(
-                label="Total Calls",
+                label=t("total_calls"),
                 value=dashboard_data.get('total_calls', 0),
-                help="所有操作的总调用次数"
+                help=t("total_calls_help")
             )
         
         with col3:
             total_time = dashboard_data.get('total_time', 0)
             st.metric(
-                label="Total Time",
+                label=t("total_time"),
                 value=f"{total_time:.2f}s",
-                help="所有操作的总耗时"
+                help=t("total_time_help")
             )
         
         # 最慢操作排行
-        st.subheader("⏱️ Slowest Operations")
+        st.subheader(t("slowest_operations"))
         
         top_slowest = dashboard_data.get('top_slowest', [])
         if top_slowest:
@@ -652,10 +673,10 @@ with st.container():
                 with col_calls:
                     st.text(f"{op['call_count']} calls")
         else:
-            st.info("No performance data collected yet. Operations will appear here after execution.")
+            st.info(t("no_perf_data"))
         
         # Token 使用估算
-        st.subheader("🎯 Token Usage Estimation")
+        st.subheader(t("token_usage"))
         
         # 读取 PLAN.md 估算
         plan_path = os.path.join(os.getcwd(), "PLAN.md")
@@ -675,23 +696,23 @@ with st.container():
                 usage_ratio = min(total_estimated / max_tokens, 1.0)
                 
                 st.progress(usage_ratio)
-                st.caption(f"Estimated: {total_estimated}/{max_tokens} tokens ({usage_ratio*100:.1f}%) | PLAN: {plan_tokens} | Output: {estimated_output}")
+                st.caption(t("token_estimated").format(total_estimated, max_tokens, usage_ratio*100, plan_tokens, estimated_output))
                 
                 # 警告
                 if usage_ratio > 0.9:
-                    st.warning("⚠️ Token usage is very high. Consider reducing PLAN.md complexity or using incremental sync.")
+                    st.warning(t("token_high"))
                 elif usage_ratio > 0.75:
-                    st.info("ℹ️ Token usage is moderate. P3 optimization will help reduce context size.")
+                    st.info(t("token_moderate"))
                 else:
-                    st.success("✅ Token usage is healthy. P3 optimization is working well.")
+                    st.success(t("token_healthy"))
                 
             except Exception as e:
-                st.error(f"Failed to estimate tokens: {e}")
+                st.error(t("token_error").format(e))
         else:
-            st.info("PLAN.md not found. Token estimation unavailable.")
+            st.info(t("plan_not_found"))
         
         # 最近执行
-        st.subheader("🕐 Recent Executions")
+        st.subheader(t("recent_executions"))
         
         recent = dashboard_data.get('recent_executions', [])
         if recent:
@@ -709,12 +730,12 @@ with st.container():
                     color = "🟢" if rate >= 90 else "🟡" if rate >= 70 else "🔴"
                     st.text(f"{color} {rate:.0f}%")
         else:
-            st.info("No recent executions.")
+            st.info(t("no_recent_exec"))
     
     except ImportError as e:
-        st.warning(f"Performance monitor not available: {e}")
+        st.warning(t("perf_monitor_unavailable").format(e))
     except Exception as e:
-        st.error(f"Error loading performance data: {e}")
+        st.error(t("perf_data_error").format(e))
 
 # Auto-refresh every 5 seconds
 st.markdown("---")

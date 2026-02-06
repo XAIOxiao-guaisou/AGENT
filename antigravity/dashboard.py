@@ -673,12 +673,11 @@ with st.container():
     with t_col2:
         st.subheader(t("task_plan"))
         
-        # Read current PLAN.md as template
-        
         task_plan = st.text_area(
-            value=default_plan, 
-            height=250,
-            label_visibility="collapsed"
+            t("plan_content"),
+            placeholder=t("placeholder_plan"),
+            height=200,
+            help=t("plan_help")
         )
 
     # Launch buttons

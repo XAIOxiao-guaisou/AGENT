@@ -917,14 +917,31 @@ if st.button(t("refresh")):
 # Replace the existing P3 Performance Monitor section in dashboard.py with this code
 
 # ============================================================
-# P3: Performance Monitor (性能监控中枢) - Project-Scoped
+# P3 性能监控 (Performance Monitor)
 # ============================================================
 
 st.markdown("---")
+st.header(f"📊 {t('performance_monitor')}")
 
 # Get active project context from session state
 active_project_root = st.session_state.get('active_project_root', Path("."))
-active_perf_monitor = st.session_state.get('active_perf_monitor', None)
+
+# Get active performance monitor with defensive initialization
+perf_monitor = st.session_state.get('active_perf_monitor')
+
+# Try to initialize if not available and we have a valid project root
+if not perf_monitor and active_project_root:
+    try:
+        from antigravity.performance_monitor import PerformanceMonitor
+        
+        # Only initialize for non-Global projects
+        if active_project_root != Path("."):
+            perf_monitor = PerformanceMonitor(str(active_project_root))
+            st.session_state.active_perf_monitor = perf_monitor
+    except Exception as e:
+        # Silently fail - performance monitoring is optional
+        pass
+
 active_state_mgr = st.session_state.get('active_state_mgr', state_mgr)
 project_name = active_project_root.name if active_project_root != Path(".") else "Global"
 

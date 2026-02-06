@@ -3,6 +3,7 @@ import os
 import fnmatch
 import subprocess
 import re
+from pathlib import Path
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from threading import Timer, Lock
@@ -11,10 +12,17 @@ from antigravity.test_runner import run_tests_for_file
 from antigravity.config import CONFIG
 from antigravity.state_manager import StateManager
 from antigravity.change_detector import ChangeDetector
+# P3: Multi-project support
+from antigravity.p3_root_detector import find_project_root
+from antigravity.p3_state_manager import P3StateManager
 
 class AntigravityMonitor(FileSystemEventHandler):
     def __init__(self, project_root):
+        # P3: Use pathlib for consistent path handling
         self.project_root = project_root
+        self.watch_root = Path(project_root).resolve()
+        
+        # Legacy state manager for backward compatibility
         self.state_manager = StateManager(project_root)
         self.auditor = Auditor(project_root, state_manager=self.state_manager)
         self.timers = {}

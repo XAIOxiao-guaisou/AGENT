@@ -605,11 +605,18 @@ class DeliveryGate:
         Save sign-off to project root / 保存签署文件到项目根目录
         
         Phase 21 P0: Generate SIGN_OFF.json with timestamp.
+        Phase 21 Enhancement: Add source_code_merkle_root for tamper-proof delivery
         """
         sign_off_file = self.project_root / 'SIGN_OFF.json'
         
+        # Calculate Merkle root for tamper detection
+        merkle_root = self._calculate_merkle_root()
+        project_hash = self._calculate_project_hash()
+        
         sign_off_data = {
             'project_name': project.get('name', 'unknown'),
+            'project_hash': f"sha256:{project_hash}",
+            'source_code_merkle_root': f"merkle:{merkle_root}",
             'delivery_approved': True,
             'local_signature': local_sig.to_dict(),
             'remote_signature': remote_sig.to_dict(),
@@ -618,6 +625,97 @@ class DeliveryGate:
         
         with open(sign_off_file, 'w', encoding='utf-8') as f:
             json.dump(sign_off_data, f, indent=2, ensure_ascii=False)
-        
         logger.info(f"✅ Sign-off saved to: {sign_off_file}")
         print(f"\n📋 Sign-off saved: {sign_off_file}")
+        print(f"   🔒 Merkle root: {merkle_root[:32]}...")
+        print(f"   🔐 Project hash: {project_hash[:32]}...")
+    
+    def _calculate_project_hash(self) -> str:
+        """
+        Calculate SHA256 hash of all source files
+        
+        Phase 21 Enhancement: Project-wide hash for integrity
+        """
+        import hashlib
+        
+        hasher = hashlib.sha256()
+        project_files = sorted(self.project_root.glob('**/*.py'))
+        
+        for file in project_files:
+            if '__pycache__' not in str(file):
+                hasher.update(file.read_bytes())
+        
+        return hasher.hexdigest()
+    
+    def _calculate_merkle_root(self) -> str:
+        """
+        Calculate Merkle root of source code tree
+        
+        Phase 21 Enhancement: Tamper-proof delivery
+        Ensures any code change after sign-off invalidates the signature
+        
+        Returns:
+            Merkle root hash
+        """
+        import hashlib
+        
+        project_files = sorted(self.project_root.glob('**/*.py'))
+        
+        # Calculate hash for each file
+        file_hashes = []
+        for file in project_files:
+            if '__pycache__' not in str(file):
+                file_hash = hashlib.sha256(file.read_bytes()).hexdigest()
+                file_hashes.append(file_hash)
+        
+        # Build Merkle tree (simplified - single level)
+        if not file_hashes:
+            return hashlib.sha256(b"empty").hexdigest()
+        
+        # Combine all hashes
+        combined = "".join(file_hashes)
+        merkle_root = hashlib.sha256(combined.encode()).hexdigest()
+        
+        return merkle_root
+    
+    def verify_integrity(self) -> bool:
+        """
+        Verify delivery integrity using Merkle root
+        
+        Phase 21 Enhancement: Tamper detection
+        Checks if source code has been modified after sign-off
+        
+        Returns:
+            True if Merkle root matches current source code
+        """
+        sign_off_file = self.project_root / 'SIGN_OFF.json'
+        
+        if not sign_off_file.exists():
+            logger.warning("SIGN_OFF.json not found")
+            return False
+        
+        try:
+            with open(sign_off_file, 'r', encoding='utf-8') as f:
+                sign_off = json.load(f)
+            
+            stored_merkle = sign_off.get('source_code_merkle_root', '').replace('merkle:', '')
+            
+            # Calculate current Merkle root
+            current_merkle = self._calculate_merkle_root()
+            
+            if stored_merkle != current_merkle:
+                logger.error("⚠️ TAMPER DETECTED!")
+                logger.error(f"   Stored Merkle:  {stored_merkle[:32]}...")
+                logger.error(f"   Current Merkle: {current_merkle[:32]}...")
+                print(f"\n⚠️ TAMPER DETECTED!")
+                print(f"   Stored Merkle:  {stored_merkle[:32]}...")
+                print(f"   Current Merkle: {current_merkle[:32]}...")
+                print(f"   ❌ Source code has been modified after sign-off!")
+                return False
+            
+            logger.info("✅ Integrity verified - no tampering detected")
+            return True
+        
+        except Exception as e:
+            logger.error(f"⚠️ Error verifying integrity: {e}")
+            return False

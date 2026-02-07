@@ -6,6 +6,7 @@ Integrates Quality Tower with AutonomousAuditor for interactive healing.
 将质量之塔与自主审计器集成，实现交互式修复。
 
 Phase 21 P2 Step 3: Interactive Healing Integration
+Phase 21 P2 Final Tuning: Shadow Validation Integration (审查官 Enhancement)
 """
 
 import asyncio
@@ -19,6 +20,7 @@ class HealingExecutor:
     Executes healing actions for Quality Tower / 执行质量之塔的修复动作
     
     Phase 21 P2: Integrates with AutonomousAuditor for automated fixes.
+    Phase 21 P2 Final Tuning: Shadow validation for safe healing (审查官).
     """
     
     def __init__(self, project_root: Path):
@@ -29,8 +31,12 @@ class HealingExecutor:
             project_root: Project root directory / 项目根目录
         """
         self.project_root = project_root
+        
+        # Initialize shadow validator (审查官's 影子验证)
+        from .shadow_validator import ShadowValidator
+        self.shadow_validator = ShadowValidator(project_root)
     
-    async def heal_test_coverage(self, issue: str) -> Dict:
+    async def heal_test_coverage(self, issue: str, previous_score: float = 0) -> Dict:
         """
         Generate missing test cases / 生成缺失的测试用例
         

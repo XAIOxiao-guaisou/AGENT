@@ -365,6 +365,7 @@ def display_healing_buttons(result: Optional[DeliveryResult], project: Dict):
     Display interactive healing buttons / 展示交互式修复按钮
     
     Phase 21 P2: Enhanced with remedy preview dialogs.
+    Phase 21 P2 Final Tuning: ROI-based prioritization (审查官).
     
     Args:
         result: Delivery gate result / 交付门控结果
@@ -375,41 +376,34 @@ def display_healing_buttons(result: Optional[DeliveryResult], project: Dict):
         return
     
     st.subheader("🔥 一键修复 (Interactive Healing)")
-    st.caption("Sheriff 可以自动修复以下问题")
     
-    # Analyze blocking issues and provide targeted buttons
-    issues = result.blocking_issues
+    # Use precision healer for ROI-based recommendations (审查官's 精准修复)
+    from .precision_healer import PrecisionHealer
     
-    for issue in issues:
-        if "Test coverage" in issue or "Core coverage" in issue or "Happy path" in issue:
-            if st.button("🧪 请求 Agent 补充测试用例", key="heal_tests", type="primary"):
+    healer = PrecisionHealer()
+    tasks = healer.analyze_blocking_issues(result.blocking_issues)
+    
+    if not tasks:
+        st.info("未检测到可修复的问题")
+        return
+    
+    # Show ROI-based recommendations
+    st.caption("🎯 **智能推荐** (按 ROI 排序)")
+    
+    recommended_tasks = healer.get_recommended_fixes(tasks, max_tasks=3)
+    
+    for i, task in enumerate(recommended_tasks, 1):
+        with st.expander(f"#{i} {task.healing_action} (ROI: {task.roi:.2f})", expanded=(i == 1)):
+            # Display task details
+            st.markdown(healer.format_healing_recommendation(task))
+            
+            # Healing button
+            button_key = f"heal_{task.issue_type}_{i}"
+            
+            if st.button(f"🔥 执行修复 (Execute Healing)", key=button_key, type="primary" if i == 1 else "secondary"):
                 show_remedy_preview(
-                    issue_type="test_coverage",
-                    issue=issue,
-                    project=project
-                )
-        
-        elif "Vibe score" in issue:
-            if st.button("✨ 请求 Agent 清理代码", key="heal_vibe"):
-                show_remedy_preview(
-                    issue_type="vibe_score",
-                    issue=issue,
-                    project=project
-                )
-        
-        elif "Security" in issue:
-            if st.button("🔒 请求 Agent 修复安全问题", key="heal_security"):
-                show_remedy_preview(
-                    issue_type="security",
-                    issue=issue,
-                    project=project
-                )
-        
-        elif "Logic score" in issue:
-            if st.button("🎨 请求 Agent 优化逻辑", key="heal_logic"):
-                show_remedy_preview(
-                    issue_type="logic",
-                    issue=issue,
+                    issue_type=task.issue_type,
+                    issue=task.issue,
                     project=project
                 )
 

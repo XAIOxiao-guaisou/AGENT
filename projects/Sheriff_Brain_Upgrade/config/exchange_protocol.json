@@ -1,0 +1,136 @@
+{
+    "protocol_version": "Sheriff-Exchange-v1",
+    "description": "Standardized communication protocol between Local Executor and Remote Strategist",
+    "last_updated": "2026-02-07",
+    "request_format": {
+        "description": "Request from Local Executor to Remote Strategist",
+        "required_fields": [
+            "request_id",
+            "request_type",
+            "project_context",
+            "local_analysis",
+            "timestamp"
+        ],
+        "example": {
+            "request_id": "REQ-20260207-001",
+            "request_type": "semantic_audit",
+            "project_context": {
+                "project_name": "user_management_system",
+                "project_root": "/path/to/project",
+                "vibe_score": 92.5,
+                "test_coverage": 85.0,
+                "current_state": "AUDITING"
+            },
+            "local_analysis": {
+                "intents_recognized": [
+                    "database",
+                    "authentication",
+                    "api"
+                ],
+                "ast_violations": [],
+                "code_snapshot": {
+                    "main.py": "def authenticate_user(username, password):\n    ...",
+                    "models.py": "class User:\n    ..."
+                }
+            },
+            "specific_questions": [
+                "Is the authentication flow secure?",
+                "Are there potential race conditions in user session management?"
+            ],
+            "timestamp": "2026-02-07T14:05:00Z"
+        }
+    },
+    "response_format": {
+        "description": "Response from Remote Strategist to Local Executor",
+        "required_fields": [
+            "request_id",
+            "logic_score",
+            "approved",
+            "expert_advice",
+            "timestamp"
+        ],
+        "example": {
+            "request_id": "REQ-20260207-001",
+            "logic_score": 88,
+            "approved": true,
+            "expert_advice": "Authentication flow is secure. Consider adding rate limiting to prevent brute force attacks.",
+            "architectural_debt": [
+                "User session management lacks proper cleanup mechanism"
+            ],
+            "race_condition_report": [
+                {
+                    "file": "session_manager.py",
+                    "line": 42,
+                    "description": "Concurrent access to session_cache without lock"
+                }
+            ],
+            "naming_consistency": "consistent",
+            "recommended_actions": [
+                "Add rate limiting middleware",
+                "Implement session cleanup cron job",
+                "Add threading.Lock for session_cache access"
+            ],
+            "timestamp": "2026-02-07T14:05:30Z"
+        }
+    },
+    "error_codes": {
+        "1000": "Invalid request format",
+        "1001": "Missing required fields",
+        "1002": "Invalid project context",
+        "2000": "Remote strategist unavailable",
+        "2001": "Remote strategist timeout",
+        "2002": "Remote strategist rate limit exceeded",
+        "3000": "Code snapshot too large (>1MB)",
+        "3001": "Invalid code syntax in snapshot",
+        "4000": "Unknown error"
+    },
+    "request_types": {
+        "semantic_audit": {
+            "description": "Request semantic audit for code quality and architecture",
+            "requires": [
+                "code_snapshot",
+                "vibe_score",
+                "test_coverage"
+            ]
+        },
+        "architecture_review": {
+            "description": "Request architecture-level review and recommendations",
+            "requires": [
+                "project_structure",
+                "dependency_graph"
+            ]
+        },
+        "security_scan": {
+            "description": "Request security vulnerability scan",
+            "requires": [
+                "code_snapshot",
+                "dependencies"
+            ]
+        },
+        "performance_analysis": {
+            "description": "Request performance bottleneck analysis",
+            "requires": [
+                "code_snapshot",
+                "profiling_data"
+            ]
+        }
+    },
+    "quality_thresholds": {
+        "logic_score_min": 80,
+        "vibe_score_min": 90,
+        "test_coverage_min": 80,
+        "architectural_debt_max": 3,
+        "race_conditions_max": 0
+    },
+    "retry_policy": {
+        "max_retries": 3,
+        "retry_delay_seconds": 5,
+        "exponential_backoff": true,
+        "timeout_seconds": 30
+    },
+    "rate_limits": {
+        "requests_per_minute": 10,
+        "requests_per_hour": 100,
+        "max_code_snapshot_size_mb": 1
+    }
+}

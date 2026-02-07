@@ -1,5 +1,52 @@
 [
   {
+    "timestamp": "2026-02-07T14:03:25.874658",
+    "can_deliver": false,
+    "vibe_score": 96.0,
+    "test_coverage": 0,
+    "logic_score": 0,
+    "security_issues": 1,
+    "blocking_issues": [
+      "Security: Unsafe function call in helpers.py: exec()",
+      "Test coverage: 0.0% (min: 80.0%)",
+      "Core coverage: 0.0% (min: 90.0%)"
+    ],
+    "local_signed": false,
+    "remote_signed": false,
+    "audit_tier_results": {
+      "static": {
+        "passed": false,
+        "issues": [
+          "Security: Unsafe function call in helpers.py: exec()"
+        ],
+        "metrics": {
+          "syntax_errors": 0,
+          "import_errors": 0,
+          "vibe_score": 96.0,
+          "security_issues": 1
+        }
+      },
+      "dynamic": {
+        "passed": false,
+        "issues": [
+          "Test coverage: 0.0% (min: 80.0%)",
+          "Core coverage: 0.0% (min: 90.0%)"
+        ],
+        "metrics": {
+          "test_coverage": 0,
+          "core_coverage": 0,
+          "has_happy_path_tests": true
+        }
+      },
+      "semantic": {
+        "passed": false,
+        "skipped": true,
+        "issues": []
+      }
+    },
+    "checksum": "98ea372cdd374eed"
+  },
+  {
     "timestamp": "2026-02-07T11:34:49.183309",
     "can_deliver": false,
     "vibe_score": 96.0,

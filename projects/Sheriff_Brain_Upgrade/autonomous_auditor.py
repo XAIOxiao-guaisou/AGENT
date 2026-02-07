@@ -186,22 +186,42 @@ class SandboxExecutor:
         Memory guardian thread - monitors and kills process if memory exceeds limit
         
         Industrial-Grade Patch: Soft-hard approach for Windows compatibility
-        Uses psutil for cross-platform memory monitoring
+        Final Polishing: Two-level circuit breaker (warning → termination)
         """
         try:
             import psutil
             
             ps_process = psutil.Process(process.pid)
+            warning_sent = False
+            
+            # FINAL POLISHING: Two-level thresholds
+            warning_threshold = max_memory_mb * 0.8  # 80% = yellow warning
+            critical_threshold = max_memory_mb       # 100% = red termination
             
             while self.memory_guardian_active and process.poll() is None:
                 try:
                     # Get memory usage in MB
                     memory_mb = ps_process.memory_info().rss / (1024 * 1024)
                     
-                    if memory_mb > max_memory_mb:
-                        print(f"\n⚠️ MEMORY LIMIT EXCEEDED")
+                    # Level 1: Warning + Introspection (80%)
+                    if memory_mb > warning_threshold and not warning_sent:
+                        print(f"\n⚠️ MEMORY WARNING (Level 1)")
                         print(f"   Current: {memory_mb:.1f}MB")
-                        print(f"   Limit: {max_memory_mb}MB")
+                        print(f"   Warning threshold: {warning_threshold:.1f}MB")
+                        print(f"   Critical threshold: {critical_threshold:.1f}MB")
+                        print(f"   💡 Consider code optimization")
+                        
+                        # TODO: Send introspection signal to Auditor
+                        # This would trigger LLM self-optimization in next HEALING cycle
+                        # For now, just log the warning
+                        
+                        warning_sent = True
+                    
+                    # Level 2: Termination (100%)
+                    if memory_mb > critical_threshold:
+                        print(f"\n🔴 MEMORY CRITICAL (Level 2)")
+                        print(f"   Current: {memory_mb:.1f}MB")
+                        print(f"   Limit: {critical_threshold:.1f}MB")
                         print(f"   🔪 Terminating sandbox process...")
                         
                         # Kill process
@@ -210,7 +230,7 @@ class SandboxExecutor:
                         
                         # Raise custom exception
                         raise SandboxMemoryExceeded(
-                            f"Sandbox memory exceeded: {memory_mb:.1f}MB > {max_memory_mb}MB"
+                            f"Sandbox memory exceeded: {memory_mb:.1f}MB > {critical_threshold:.1f}MB"
                         )
                     
                     time.sleep(0.1)  # Check every 100ms
@@ -477,6 +497,114 @@ class AutonomousAuditor:
         print(f"{'=' * 70}")
         
         return result
+    
+    def _save_paused_state(self, task_id: str):
+        """
+        Save state when hitting token threshold
+        
+        Industrial-Grade Patch: PAUSED state persistence for 100% recovery
+        Final Polishing: Atomic write with Path.replace() for true atomicity
+        """
+        state = {
+            'paused': True,
+            'paused_at_task': task_id,
+            'total_tokens_used': self.total_tokens_used,
+            'tasks_completed': self.tasks_completed,
+            'tasks_failed': self.tasks_failed,
+            'execution_order': self.execution_order,
+            'completed_tasks': [
+                t for t in self.execution_order 
+                if self.orchestrator.tasks[t].state == TaskState.DONE
+            ],
+            # FIXED: Use networkx serialization instead of direct dict
+            'dag_topology': nx.node_link_data(self.orchestrator.dependency_graph) if hasattr(self.orchestrator, 'dependency_graph') else {},
+            'output_hashes': {
+                t: hashlib.md5(self.orchestrator.tasks[t].code_generated.encode()).hexdigest()
+                for t in self.execution_order 
+                if self.orchestrator.tasks.get(t) and self.orchestrator.tasks[t].code_generated
+            },
+            'forbidden_zones': list(self.forbidden_zones),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        # FINAL POLISHING: Atomic write with temp file swap
+        temp_file = self.state_file.with_suffix('.json.tmp')
+        
+        try:
+            # Step 1: Write to temp file
+            temp_file.write_text(
+                json.dumps(state, indent=2, ensure_ascii=False), 
+                encoding='utf-8'
+            )
+            
+            # Step 2: Verify temp file integrity
+            verify_state = json.loads(temp_file.read_text(encoding='utf-8'))
+            if not verify_state.get('paused'):
+                raise ValueError("State verification failed: 'paused' flag missing")
+            
+            # Step 3: Atomic replace (OS-level atomic on POSIX, safest on Windows)
+            temp_file.replace(self.state_file)
+            
+            print(f"\n⏸️ PAUSED STATE SAVED (ATOMIC)")
+            print(f"   File: {self.state_file}")
+            print(f"   Paused at: {task_id}")
+            print(f"   Tokens used: {self.total_tokens_used}/{self.quota.token_threshold_pause}")
+            print(f"   Completed: {self.tasks_completed} tasks")
+            print(f"   DAG nodes: {len(state['dag_topology'].get('nodes', []))}")
+            print(f"   ✅ File integrity verified")
+            print(f"\n   💡 To resume: Run the same mission again")
+            print(f"   💡 Dashboard will show: ⏸️ PAUSED (Token Limit)")
+            
+        except Exception as e:
+            print(f"❌ Failed to save state: {e}")
+            raise
+        finally:
+            # Step 4: Final cleanup
+            if temp_file.exists():
+                temp_file.unlink()
+    
+    def _load_state(self):
+        """
+        Load previously saved state for cold-start recovery
+        
+        Industrial-Grade Patch: Restore from PAUSED state
+        """
+        if not self.state_file.exists():
+            return None
+        
+        try:
+            state = json.loads(self.state_file.read_text(encoding='utf-8'))
+            
+            if state.get('paused'):
+                print(f"\n🔄 RESUMING FROM PAUSED STATE")
+                print(f"   Paused at: {state['paused_at_task']}")
+                print(f"   Completed: {state['tasks_completed']} tasks")
+                print(f"   Tokens used: {state['total_tokens_used']}")
+                print(f"   Timestamp: {state['timestamp']}")
+                
+                # Restore state
+                self.total_tokens_used = state['total_tokens_used']
+                self.tasks_completed = state['tasks_completed']
+                self.tasks_failed = state['tasks_failed']
+                self.paused_at_task = state['paused_at_task']
+                self.execution_order = state.get('execution_order', [])
+                self.forbidden_zones = set(state.get('forbidden_zones', []))
+                self.is_paused = True
+                
+                # FIXED: Restore DAG from networkx serialization
+                if 'dag_topology' in state and state['dag_topology']:
+                    try:
+                        import networkx as nx
+                        self.orchestrator.dependency_graph = nx.node_link_graph(state['dag_topology'])
+                        print(f"   ✅ DAG restored: {len(state['dag_topology'].get('nodes', []))} nodes")
+                    except Exception as e:
+                        print(f"   ⚠️ Failed to restore DAG: {e}")
+                
+                return state
+        except Exception as e:
+            print(f"⚠️ Failed to load state: {e}")
+        
+        return None
     
     async def _execute_atomic_task(self, task: AtomicTask) -> bool:
         """

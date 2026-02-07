@@ -6,9 +6,10 @@ Sheriff Brain's decision-making center for autonomous task decomposition.
 Sheriff Brain 的决策中枢，实现 Idea 到 AtomicTasks 的自主拆解。
 
 Phase 19: Core Architecture
-- 7-State lifecycle management
+- 8-State lifecycle management (including PAUSED)
 - Topological sorting for dependencies
 - Async pipeline scheduling
+- DAG serialization for state persistence
 """
 
 import asyncio
@@ -17,6 +18,7 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Set
 from datetime import datetime
 import json
+import networkx as nx  # Industrial-Grade Patch: DAG serialization
 
 
 class TaskState(Enum):
@@ -24,9 +26,14 @@ class TaskState(Enum):
     8-State Task Lifecycle / 8 状态任务生命周期
     
     Phase 19 Deep Optimization: Enhanced with ROLLBACK state
+    Industrial-Grade Patch: Added PAUSED state for token threshold
     
     State Flow:
     PENDING → ANALYZING → [REVIEWING] → GENERATING → AUDITING → [HEALING] → [ROLLBACK] → DONE
+    
+    Special States:
+    - PAUSED: Token threshold reached, execution suspended
+    - ROLLBACK: Failure recovery, restore from snapshot
     """
     PENDING = "PENDING"           # 待处理
     ANALYZING = "ANALYZING"       # 本地意图与约束分析
@@ -34,7 +41,8 @@ class TaskState(Enum):
     GENERATING = "GENERATING"     # 异步流水线生成
     AUDITING = "AUDITING"         # 多层级质量审计
     HEALING = "HEALING"           # 自愈修复循环
-    ROLLBACK = "ROLLBACK"         # 失败回滚（新增，安全性保障）
+    ROLLBACK = "ROLLBACK"         # 失败回滚（安全性保障）
+    PAUSED = "PAUSED"             # 熔断挂起（Token 阈值触发）
     DONE = "DONE"                 # 双签完成交付
 
 

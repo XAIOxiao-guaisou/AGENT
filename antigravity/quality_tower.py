@@ -445,8 +445,21 @@ def show_remedy_preview(issue_type: str, issue: str, project: Dict):
         
         if st.button("🔥 执行手术 (Execute Healing)", type="primary"):
             with st.spinner("Sheriff 正在生成测试用例..."):
-                # TODO: Trigger AutonomousAuditor in test_executor mode
-                st.success("✅ 测试用例生成完成！请重新运行审计验证。")
+                # Trigger AutonomousAuditor in test_executor mode
+                from .healing_executor import HealingExecutor
+                
+                executor = HealingExecutor(Path(project['root']))
+                result = asyncio.run(executor.heal_test_coverage(issue))
+                
+                if result['success']:
+                    st.success(f"✅ {result['message']}")
+                    st.write("**变更文件:**")
+                    for file in result.get('files_modified', []):
+                        st.code(f"A {file}")
+                    st.caption("请重新运行审计验证覆盖率提升")
+                else:
+                    st.error(f"❌ {result['message']}")
+                
                 st.rerun()
     
     elif issue_type == "vibe_score":
@@ -465,8 +478,21 @@ def show_remedy_preview(issue_type: str, issue: str, project: Dict):
         
         if st.button("🔥 执行手术 (Execute Healing)", type="primary"):
             with st.spinner("Sheriff 正在清理代码..."):
-                # TODO: Trigger code cleanup
-                st.success("✅ 代码清理完成！请重新运行审计验证。")
+                # Trigger code cleanup
+                from .healing_executor import HealingExecutor
+                
+                executor = HealingExecutor(Path(project['root']))
+                result = asyncio.run(executor.heal_vibe_score(issue))
+                
+                if result['success']:
+                    st.success(f"✅ {result['message']}")
+                    st.write("**变更文件:**")
+                    for file in result.get('files_modified', []):
+                        st.code(f"M {file}")
+                    st.caption("请重新运行审计验证 Vibe Score 提升")
+                else:
+                    st.error(f"❌ {result['message']}")
+                
                 st.rerun()
     
     elif issue_type == "security":
@@ -485,8 +511,21 @@ def show_remedy_preview(issue_type: str, issue: str, project: Dict):
         
         if st.button("🔥 执行手术 (Execute Healing)", type="primary"):
             with st.spinner("Sheriff 正在修复安全问题..."):
-                # TODO: Trigger security fix
-                st.success("✅ 安全问题修复完成！请重新运行审计验证。")
+                # Trigger security fix
+                from .healing_executor import HealingExecutor
+                
+                executor = HealingExecutor(Path(project['root']))
+                result = asyncio.run(executor.heal_security(issue))
+                
+                if result['success']:
+                    st.success(f"✅ {result['message']}")
+                    st.write("**变更文件:**")
+                    for file in result.get('files_modified', []):
+                        st.code(f"M {file}")
+                    st.caption("请重新运行审计验证安全问题已解决")
+                else:
+                    st.error(f"❌ {result['message']}")
+                
                 st.rerun()
     
     elif issue_type == "logic":
@@ -505,8 +544,21 @@ def show_remedy_preview(issue_type: str, issue: str, project: Dict):
         
         if st.button("🔥 执行手术 (Execute Healing)", type="primary"):
             with st.spinner("Sheriff 正在优化逻辑..."):
-                # TODO: Trigger logic optimization
-                st.success("✅ 逻辑优化完成！请重新运行审计验证。")
+                # Trigger logic optimization
+                from .healing_executor import HealingExecutor
+                
+                executor = HealingExecutor(Path(project['root']))
+                result = asyncio.run(executor.heal_logic(issue))
+                
+                if result['success']:
+                    st.success(f"✅ {result['message']}")
+                    st.write("**变更文件:**")
+                    for file in result.get('files_modified', []):
+                        st.code(f"M {file}")
+                    st.caption("请重新运行审计验证逻辑优化效果")
+                else:
+                    st.error(f"❌ {result['message']}")
+                
                 st.rerun()
     
     if st.button("取消"):

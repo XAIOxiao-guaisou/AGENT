@@ -287,7 +287,8 @@ class ASTConstraintValidator:
                 
                 # Check for suspicious variable names
                 if any(secret in var_name for secret in ['password', 'api_key', 'secret', 'token']):
-            if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                    # Check if assigned a string literal
+                    if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
                         if len(node.value.value) > 5:  # Non-trivial string
                             self.violations.append(
                                 f"Potential hardcoded secret in '{target.id}' (line {node.lineno})"

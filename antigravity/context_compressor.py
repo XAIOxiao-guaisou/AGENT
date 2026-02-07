@@ -426,10 +426,10 @@ class ContextCompressor:
         """
         Resolve import module to file path
         
-        Simplified implementation - matches module name to file paths
+        Step 1.2.1 EMERGENCY FIX: Enhanced to handle simple module names in test scenarios
         
         Args:
-            module: Module name (e.g., 'antigravity.utils')
+            module: Module name (e.g., 'antigravity.utils' or 'module_abc123')
             current_file: Current file path
             all_files: All available files
         
@@ -449,6 +449,17 @@ class ContextCompressor:
             for file_path in all_files.keys():
                 if file_path.endswith(candidate):
                     return file_path
+        
+        # Step 1.2.1: Handle simple module names (e.g., 'module_abc123')
+        # For test scenarios where files are named like 'module_abc123.py'
+        simple_name = f"{module}.py"
+        for file_path in all_files.keys():
+            # Match by filename only (not full path)
+            if file_path.endswith(f"/{simple_name}") or file_path.endswith(f"\\{simple_name}"):
+                return file_path
+            # Also try exact match on basename
+            if Path(file_path).name == simple_name:
+                return file_path
         
         return None
     

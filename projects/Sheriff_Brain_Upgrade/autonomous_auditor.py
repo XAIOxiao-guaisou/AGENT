@@ -66,6 +66,7 @@ class ResourceQuota:
     Resource Quota - 资源配额
     
     Phase 19 Deep Optimization: Strict resource limits
+    Industrial-Grade Patch: Token consumption threshold with PAUSED state
     """
     max_execution_time_seconds: int = 30  # Max time per task
     max_memory_mb: int = 512  # Max memory usage
@@ -74,8 +75,20 @@ class ResourceQuota:
     max_retries: int = 5  # Circuit breaker threshold
     
     # Token limits for LLM calls
-    max_tokens_per_task: int = 4000
-    max_total_tokens: int = 50000
+    max_tokens_per_task: int = 4000  # Max tokens per single task
+    max_total_tokens: int = 50000  # Max total tokens for entire mission
+    
+    # Industrial-Grade: Token threshold for PAUSED state
+    token_threshold_pause: int = 20000  # Trigger PAUSED state at 20k tokens
+
+
+class SandboxMemoryExceeded(Exception):
+    """
+    Custom exception for sandbox memory limit exceeded
+    
+    Industrial-Grade Patch: Micro-tuning for Windows compatibility
+    """
+    pass
 
 
 class CircuitBreaker:
@@ -137,17 +150,22 @@ class CircuitBreaker:
         return True
 
 
+import threading
+import time
+
 class SandboxExecutor:
     """
     Sandbox Executor - 沙箱执行器
     
     Phase 19 Deep Optimization: Isolated execution environment
+    Industrial-Grade Patch: Memory guardian thread for cross-platform compatibility
     """
     
     def __init__(self, quota: ResourceQuota):
         """Initialize sandbox executor"""
         self.quota = quota
         self.sandbox_dir: Optional[Path] = None
+        self.memory_guardian_active = False
     
     async def create_sandbox(self) -> Path:
         """
@@ -163,6 +181,48 @@ class SandboxExecutor:
         
         return self.sandbox_dir
     
+    def _memory_guardian(self, process, max_memory_mb: int):
+        """
+        Memory guardian thread - monitors and kills process if memory exceeds limit
+        
+        Industrial-Grade Patch: Soft-hard approach for Windows compatibility
+        Uses psutil for cross-platform memory monitoring
+        """
+        try:
+            import psutil
+            
+            ps_process = psutil.Process(process.pid)
+            
+            while self.memory_guardian_active and process.poll() is None:
+                try:
+                    # Get memory usage in MB
+                    memory_mb = ps_process.memory_info().rss / (1024 * 1024)
+                    
+                    if memory_mb > max_memory_mb:
+                        print(f"\n⚠️ MEMORY LIMIT EXCEEDED")
+                        print(f"   Current: {memory_mb:.1f}MB")
+                        print(f"   Limit: {max_memory_mb}MB")
+                        print(f"   🔪 Terminating sandbox process...")
+                        
+                        # Kill process
+                        process.terminate()
+                        process.wait(timeout=2)
+                        
+                        # Raise custom exception
+                        raise SandboxMemoryExceeded(
+                            f"Sandbox memory exceeded: {memory_mb:.1f}MB > {max_memory_mb}MB"
+                        )
+                    
+                    time.sleep(0.1)  # Check every 100ms
+                    
+                except psutil.NoSuchProcess:
+                    break
+                    
+        except ImportError:
+            print(f"⚠️ psutil not available, memory monitoring disabled")
+        except Exception as e:
+            print(f"⚠️ Memory guardian error: {e}")
+    
     async def execute_in_sandbox(
         self,
         code: str,
@@ -172,6 +232,7 @@ class SandboxExecutor:
         Execute code in sandbox with resource limits / 在沙箱中执行代码并限制资源
         
         Phase 19 Deep Optimization: Shadow run with validation
+        Industrial-Grade Patch: Memory guardian thread
         
         Args:
             code: Code to execute
@@ -183,7 +244,7 @@ class SandboxExecutor:
         if not self.sandbox_dir:
             await self.create_sandbox()
         
-        print(f"\n🔒 Executing in sandbox (timeout: {self.quota.max_execution_time_seconds}s)")
+        print(f"\n🔒 Executing in sandbox (timeout: {self.quota.max_execution_time_seconds}s, memory: {self.quota.max_memory_mb}MB)")
         
         # Write code to sandbox
         code_file = self.sandbox_dir / "generated_code.py"
@@ -199,44 +260,67 @@ class SandboxExecutor:
             start_time = datetime.now()
             
             # Run code in subprocess with resource limits
-            result = subprocess.run(
+            process = subprocess.Popen(
                 [sys.executable, str(code_file)],
                 cwd=str(self.sandbox_dir),
-                capture_output=True,
-                text=True,
-                timeout=self.quota.max_execution_time_seconds
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
             )
+            
+            # Start memory guardian thread
+            self.memory_guardian_active = True
+            guardian_thread = threading.Thread(
+                target=self._memory_guardian,
+                args=(process, self.quota.max_memory_mb),
+                daemon=True
+            )
+            guardian_thread.start()
+            
+            try:
+                # Wait for process with timeout
+                stdout, stderr = process.communicate(timeout=self.quota.max_execution_time_seconds)
+                self.memory_guardian_active = False
+                
+            except subprocess.TimeoutExpired:
+                self.memory_guardian_active = False
+                process.kill()
+                stdout, stderr = process.communicate()
+                print(f"   ⏱️ Sandbox execution timeout ({self.quota.max_execution_time_seconds}s)")
+                return False, "Execution timeout", {'execution_time': self.quota.max_execution_time_seconds}
             
             elapsed = (datetime.now() - start_time).total_seconds()
             
             # Check if execution succeeded
-            success = result.returncode == 0
-            output = result.stdout if success else result.stderr
+            success = process.returncode == 0
+            output = stdout if success else stderr
             
             metrics = {
                 'execution_time': elapsed,
-                'return_code': result.returncode,
+                'return_code': process.returncode,
                 'sandbox_dir': str(self.sandbox_dir)
             }
             
             if success:
                 print(f"   ✅ Sandbox execution successful ({elapsed:.2f}s)")
             else:
-                print(f"   ❌ Sandbox execution failed (code: {result.returncode})")
-                print(f"      Error: {result.stderr[:200]}")
+                print(f"   ❌ Sandbox execution failed (code: {process.returncode})")
+                print(f"      Error: {stderr[:200]}")
             
             return success, output, metrics
             
-        except subprocess.TimeoutExpired:
-            print(f"   ⏱️ Sandbox execution timeout ({self.quota.max_execution_time_seconds}s)")
-            return False, "Execution timeout", {'execution_time': self.quota.max_execution_time_seconds}
+        except SandboxMemoryExceeded as e:
+            print(f"   💥 Sandbox memory limit exceeded")
+            return False, str(e), {'error': 'memory_exceeded', 'limit_mb': self.quota.max_memory_mb}
         
         except Exception as e:
+            self.memory_guardian_active = False
             print(f"   ❌ Sandbox execution error: {e}")
             return False, str(e), {'error': str(e)}
     
     async def cleanup_sandbox(self):
         """Clean up sandbox environment"""
+        self.memory_guardian_active = False
         if self.sandbox_dir and self.sandbox_dir.exists():
             shutil.rmtree(self.sandbox_dir)
             print(f"   🧹 Sandbox cleaned up: {self.sandbox_dir}")
@@ -248,6 +332,7 @@ class AutonomousAuditor:
     
     Phase 19: Core autonomous execution loop
     Phase 19 Deep Optimization: State checkpointing + sandbox + circuit breaker
+    Industrial-Grade Patch: Token threshold + PAUSED state + forbidden zones
     
     Key Responsibilities:
     - reasoning_loop() - Main autonomous execution
@@ -255,12 +340,15 @@ class AutonomousAuditor:
     - Multi-stage validation (shadow run)
     - Resource quota enforcement
     - Circuit breaker protection
+    - Token consumption tracking with PAUSED state persistence
+    - Structural error熔断路径 with AST forbidden zones
     """
     
     def __init__(
         self,
         project_root: str,
-        quota: Optional[ResourceQuota] = None
+        quota: Optional[ResourceQuota] = None,
+        state_file: Optional[str] = None
     ):
         """
         Initialize autonomous auditor
@@ -268,9 +356,11 @@ class AutonomousAuditor:
         Args:
             project_root: Root directory of the project
             quota: Resource quota limits
+            state_file: Path to state persistence file (.antigravity_state.json)
         """
         self.project_root = Path(project_root)
         self.quota = quota or ResourceQuota()
+        self.state_file = Path(state_file) if state_file else self.project_root / ".antigravity_state.json"
         
         # Core components
         self.orchestrator = MissionOrchestrator(str(project_root))
@@ -286,6 +376,18 @@ class AutonomousAuditor:
         self.total_tokens_used = 0
         self.tasks_completed = 0
         self.tasks_failed = 0
+        
+        # Industrial-Grade: PAUSED state management
+        self.is_paused = False
+        self.paused_at_task: Optional[str] = None
+        self.execution_order: List[str] = []
+        self.execution_state: Dict = {}
+        
+        # Industrial-Grade: Forbidden zones for structural errors
+        self.forbidden_zones: Set[str] = set()  # AST paths to avoid
+        
+        # Try to load previous state if exists
+        self._load_state()
     
     async def reasoning_loop(self, mission: str) -> Dict:
         """

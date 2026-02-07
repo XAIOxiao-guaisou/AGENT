@@ -97,6 +97,9 @@ class RCAImmuneSystem:
     4. Escalate if needed (必要时升级)
     """
     
+    # Phase 21: Immune Fatigue Protection
+    MAX_HEALING_DEPTH = 3  # 免疫疲劳阈值 - Maximum healing attempts
+    
     def __init__(self, project_root: Optional[Path] = None):
         """
         Initialize immune system / 初始化免疫系统
@@ -107,6 +110,9 @@ class RCAImmuneSystem:
         self.project_root = project_root or Path(".")
         self.fix_history: List[Dict] = []
         self.error_patterns: Dict[str, int] = {}  # Track recurring errors
+        
+        # Phase 21: Healing stack for fatigue protection
+        self.healing_stack: List[str] = []  # Track healing chain
         
         # Auto-fix strategies
         self.auto_fix_strategies = {
@@ -124,6 +130,8 @@ class RCAImmuneSystem:
         This is the "immune response" - triggered when infection (error) detected!
         这是"免疫响应" - 检测到感染（错误）时触发！
         
+        Phase 21: Added immune fatigue protection to prevent infinite loops.
+        
         Args:
             error: Exception object / 异常对象
             context: Additional context / 附加上下文
@@ -137,40 +145,125 @@ class RCAImmuneSystem:
         snapshot = self._extract_snapshot(error, context)
         print(f"📸 Snapshot captured: {snapshot.error_type} at {snapshot.file_path}:{snapshot.line_number}")
         
-        # 2. Analyze severity (分析严重性)
-        severity = self._analyze_severity(snapshot)
-        print(f"🔍 Severity analysis: {severity}")
+        # 2. Check for immune fatigue (检查免疫疲劳)
+        error_signature = f"{snapshot.error_type}:{snapshot.message[:50]}"
         
-        # 3. Check if we can auto-fix (检查是否可以自动修复)
-        if severity in ['LOW', 'MEDIUM'] and self._can_auto_fix(snapshot):
-            print(f"💊 Attempting auto-fix...")
-            fix_result = self._auto_fix(snapshot)
+        if error_signature in self.healing_stack:
+            # Detected recursive healing attempt
+            depth = self.healing_stack.count(error_signature)
+            print(f"⚠️ Recursive healing detected! Depth: {depth}/{self.MAX_HEALING_DEPTH}")
             
-            # Always log the fix attempt (成功或失败都记录)
-            self._log_fix(snapshot, fix_result)
-            
-            if fix_result.success:
-                print(f"✅ Auto-fix successful: {fix_result.action}")
+            if depth >= self.MAX_HEALING_DEPTH:
+                print(f"🛑 IMMUNE FATIGUE! Maximum healing depth reached.")
+                print(f"   Locking project and escalating to expert...")
+                
+                # Clear healing stack to prevent further attempts
+                self.healing_stack.clear()
+                
+                # Force escalation to remote expert
+                fix_result = self._force_expert_escalation(snapshot, context or {}, depth)
+                self._log_fix(snapshot, fix_result)
                 return fix_result
-            else:
-                print(f"⚠️ Auto-fix failed: {fix_result.details}")
         
-        # 4. Escalate to remote expert (升级到远程专家)
-        if snapshot.retry_count > 2 or severity == 'HIGH':
-            print(f"🚨 Escalating to remote expert (retry: {snapshot.retry_count}, severity: {severity})")
-            fix_result = self._escalate_to_expert(snapshot, context or {})
+        # 3. Add to healing stack
+        self.healing_stack.append(error_signature)
+        
+        try:
+            # 4. Analyze severity (分析严重性)
+            severity = self._analyze_severity(snapshot)
+            print(f"🔍 Severity analysis: {severity}")
+            
+            # 5. Check if we can auto-fix (检查是否可以自动修复)
+            if severity in ['LOW', 'MEDIUM'] and self._can_auto_fix(snapshot):
+                print(f"💊 Attempting auto-fix...")
+                fix_result = self._auto_fix(snapshot)
+                
+                # Always log the fix attempt (成功或失败都记录)
+                self._log_fix(snapshot, fix_result)
+                
+                if fix_result.success:
+                    print(f"✅ Auto-fix successful: {fix_result.action}")
+                    # Remove from healing stack on success
+                    self.healing_stack.remove(error_signature)
+                    return fix_result
+                else:
+                    print(f"⚠️ Auto-fix failed: {fix_result.details}")
+                    # Also remove from stack on failure to allow retry
+                    if error_signature in self.healing_stack:
+                        self.healing_stack.remove(error_signature)
+            
+            # 6. Escalate to remote expert (升级到远程专家)
+            if snapshot.retry_count > 2 or severity == 'HIGH':
+                print(f"🚨 Escalating to remote expert (retry: {snapshot.retry_count}, severity: {severity})")
+                fix_result = self._escalate_to_expert(snapshot, context or {})
+                self._log_fix(snapshot, fix_result)
+                # Remove from healing stack after escalation
+                if error_signature in self.healing_stack:
+                    self.healing_stack.remove(error_signature)
+                return fix_result
+            
+            # 7. No fix available
+            print(f"❌ No auto-fix available, manual intervention required")
+            fix_result = FixResult(
+                success=False,
+                action='no_fix_available',
+                details=f"Error type {snapshot.error_type} requires manual intervention"
+            )
             self._log_fix(snapshot, fix_result)
+            # Remove from healing stack
+            if error_signature in self.healing_stack:
+                self.healing_stack.remove(error_signature)
             return fix_result
+            
+        except Exception as e:
+            # Cleanup healing stack on exception
+            if error_signature in self.healing_stack:
+                self.healing_stack.remove(error_signature)
+            raise
+    
+    def _force_expert_escalation(self, snapshot: ErrorSnapshot, context: Dict, depth: int) -> FixResult:
+        """
+        Force escalation to expert due to immune fatigue / 因免疫疲劳强制升级到专家
         
-        # 5. No fix available
-        print(f"❌ No auto-fix available, manual intervention required")
-        fix_result = FixResult(
-            success=False,
-            action='no_fix_available',
-            details=f"Error type {snapshot.error_type} requires manual intervention"
+        Args:
+            snapshot: Error snapshot / 错误快照
+            context: Execution context / 执行上下文
+            depth: Healing depth / 修复深度
+            
+        Returns:
+            Fix result / 修复结果
+        """
+        print(f"   🏥 CRITICAL: Immune system exhausted after {depth} attempts")
+        print(f"   📋 Project locked - requires expert intervention")
+        
+        # Enhance context with fatigue information
+        context['immune_fatigue'] = True
+        context['healing_depth'] = depth
+        context['requires_root_cause_analysis'] = True
+        context['priority'] = 'CRITICAL'
+        
+        # Import here to avoid circular dependency
+        from .sheriff_strategist import SheriffStrategist
+        
+        strategist = SheriffStrategist()
+        consultation = strategist.expert_consultation(
+            snapshot.to_dict(),
+            context
         )
-        self._log_fix(snapshot, fix_result)
-        return fix_result
+        
+        print(f"   💡 Expert diagnosis: {consultation.get('root_cause', 'Unknown')}")
+        print(f"   🔧 Recommended fix: {consultation.get('fix_approach', 'Manual intervention')}")
+        print(f"   🚨 Prevention: {consultation.get('prevention', 'Review architecture')}")
+        
+        return FixResult(
+            success=False,
+            action='immune_fatigue_escalation',
+            details=json.dumps({
+                'reason': 'Maximum healing depth exceeded',
+                'depth': depth,
+                'consultation': consultation
+            }, ensure_ascii=False)
+        )
     
     def _extract_snapshot(self, error: Exception, context: Optional[Dict] = None) -> ErrorSnapshot:
         """

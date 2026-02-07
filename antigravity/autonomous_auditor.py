@@ -124,10 +124,31 @@ class AutonomousAuditor:
         from .rca_immune_system import RCAImmuneSystem
         self.rca_system = RCAImmuneSystem(self.project_root)
         
+        # Phase 21: Initialize File Lock Manager (P0 - Async Safety)
+        from .file_lock_manager import FileLockManager
+        self.file_lock_manager = FileLockManager()
+        
         # State
         self.current_idea: Optional[str] = None
         self.execution_log: List[Dict] = []
         self.is_running = False
+    
+    async def _safe_file_write(self, file_path: str, content: str):
+        """
+        Safe file write with lock / 带锁的安全文件写入
+        
+        Ensures atomic file writes in concurrent execution.
+        确保并发执行中的原子文件写入。
+        
+        Args:
+            file_path: Path to file / 文件路径
+            content: Content to write / 要写入的内容
+        """
+        async with self.file_lock_manager.lock_file(file_path):
+            # Atomic write operation
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            self._log("File written safely", {"file": file_path, "size": len(content)})
     
     async def autonomous_run(self, idea: str) -> Dict:
         """

@@ -110,7 +110,15 @@ class ChangeDetector:
         """
         print(f"🔍 Scanning {len(file_paths)} files...")
         
+        # v1.0.1 Hotfix: Binary Exclusion
+        binary_extensions = {'.db', '.pyc', '.bin', '.exe', '.dll', '.so', '.dylib', '.png', '.jpg', '.jpeg', '.gif', '.ico'}
+        
         for file_path in file_paths:
+            # Check extension
+            ext = os.path.splitext(file_path)[1].lower()
+            if ext in binary_extensions:
+                continue
+                
             file_hash = self._compute_hash(file_path)
             if file_hash:  # 只记录成功计算哈希的文件
                 self.current_snapshot[file_path] = file_hash

@@ -18,14 +18,16 @@ Phase 21 P2 Enhancements:
 - Quality sparklines data
 """
 
+from __future__ import annotations
 import json
 import hashlib
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, TYPE_CHECKING
 from dataclasses import asdict
 
-from .delivery_gate import DeliveryResult
+if TYPE_CHECKING:
+    from .delivery_gate import DeliveryResult
 
 
 class AuditHistoryManager:

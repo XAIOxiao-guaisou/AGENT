@@ -1,2 +1,0 @@
-# Plan
-Implement real auth.

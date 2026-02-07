@@ -5,6 +5,12 @@ Autonomous Auditor - Additional Methods for Industrial-Grade Patches
 Add these methods to the AutonomousAuditor class
 """
 
+import json
+import hashlib
+from datetime import datetime
+from typing import List, Tuple, Set, Dict, Any, Optional
+from .task_state import TaskState
+
 # Add after the _generate_code method (around line 600):
 
     def _save_paused_state(self, task_id: str):
@@ -44,7 +50,7 @@ Add these methods to the AutonomousAuditor class
         print(f"\n   💡 To resume: Run the same mission again")
         print(f"   💡 Dashboard will show: ⏸️ PAUSED (Token Limit)")
 
-    def _load_state(self):
+    def _load_state(self) -> Optional[Dict[str, Any]]:
         """
         Load previous state for cold-start recovery
         

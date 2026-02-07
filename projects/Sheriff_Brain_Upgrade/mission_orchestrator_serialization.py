@@ -16,7 +16,10 @@ Add these methods to the MissionOrchestrator class for state persistence
         Args:
             filepath: Path to save state file (.antigravity_state.json)
         """
+        import json
+        from datetime import datetime
         from pathlib import Path
+        import networkx as nx
         
         # Serialize tasks
         tasks_data = []
@@ -73,7 +76,10 @@ Add these methods to the MissionOrchestrator class for state persistence
         Args:
             filepath: Path to state file
         """
+        import json
         from pathlib import Path
+        import networkx as nx
+        from .task import AtomicTask, TaskState
         
         filepath_obj = Path(filepath)
         if not filepath_obj.exists():
@@ -85,6 +91,12 @@ Add these methods to the MissionOrchestrator class for state persistence
             
             print(f"\n🔄 Loading state from: {filepath}")
             print(f"   Timestamp: {state.get('timestamp')}")
+            
+            # Clear existing state
+            self.tasks.clear()
+            self.dependency_graph.clear()
+            self.execution_history.clear()
+            self.snapshots.clear()
             
             # Restore tasks
             for task_data in state.get('tasks', []):
@@ -101,6 +113,14 @@ Add these methods to the MissionOrchestrator class for state persistence
                 task.max_retries = task_data.get('max_retries', 3)
                 task.error_message = task_data.get('error_message')
                 
+                # Restore timestamps
+                if task_data.get('created_at'):
+                    from datetime import datetime
+                    task.created_at = datetime.fromisoformat(task_data['created_at'])
+                if task_data.get('completed_at'):
+                    from datetime import datetime
+                    task.completed_at = datetime.fromisoformat(task_data['completed_at'])
+                
                 self.tasks[task.task_id] = task
             
             # Industrial-Grade: Restore DAG from networkx serialization
@@ -111,20 +131,39 @@ Add these methods to the MissionOrchestrator class for state persistence
             # Restore execution history
             self.execution_history = state.get('execution_history', [])
             
+            # Restore snapshots
+            snapshots_data = state.get('snapshots', {})
+            for task_id, snap_data in snapshots_data.items():
+                self.snapshots[task_id] = {
+                    'checkpoint_id': snap_data['checkpoint_id'],
+                    'timestamp': snap_data['timestamp'],
+                    'state': TaskState(snap_data['state']) if isinstance(snap_data['state'], str) else snap_data['state']
+                }
+            
             print(f"   ✅ Loaded {len(self.tasks)} tasks")
+            print(f"   ✅ Restored {len(self.snapshots)} snapshots")
             
             return True
             
         except Exception as e:
             print(f"❌ Failed to load state: {e}")
+            import traceback
+            traceback.print_exc()
             return False
     
-    def _persist_rollback_state(self, task_id: str, reason: str, snapshot: Dict):
+    def _persist_rollback_state(self, task_id: str, reason: str, snapshot: dict):
         """
         Persist rollback event for audit trail
         
         Industrial-Grade Patch: Append-only rollback log
+        
+        Args:
+            task_id: ID of rolled back task
+            reason: Reason for rollback
+            snapshot: Snapshot dictionary
         """
+        import json
+        from datetime import datetime
         from pathlib import Path
         
         rollback_log = {

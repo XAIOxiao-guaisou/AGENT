@@ -238,7 +238,7 @@ class VibeChecker:
             skeleton = self._generate_skeleton()
             
             # Try to get AI review
-            from antigravity.auditor import Auditor
+            from antigravity.core.autonomous_auditor import AutonomousAuditor as Auditor
             
             auditor = Auditor(str(self.root))
             

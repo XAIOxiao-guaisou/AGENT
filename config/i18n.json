@@ -1,0 +1,248 @@
+{
+    "states": {
+        "PENDING": {
+            "zh": "待处理",
+            "en": "Pending"
+        },
+        "STRATEGY_REVIEW": {
+            "zh": "策略审查",
+            "en": "Strategy Review"
+        },
+        "GENERATING": {
+            "zh": "生成中",
+            "en": "Generating"
+        },
+        "EXECUTING": {
+            "zh": "执行中",
+            "en": "Executing"
+        },
+        "SELF_CHECK": {
+            "zh": "自检",
+            "en": "Self Check"
+        },
+        "HEALING": {
+            "zh": "自愈中",
+            "en": "Self-Healing"
+        },
+        "AUDITING": {
+            "zh": "审计中",
+            "en": "Auditing"
+        },
+        "DONE": {
+            "zh": "完成",
+            "en": "Done"
+        },
+        "FAILED": {
+            "zh": "失败",
+            "en": "Failed"
+        },
+        "PAUSED": {
+            "zh": "挂起",
+            "en": "Suspended"
+        },
+        "ROLLBACK": {
+            "zh": "回滚",
+            "en": "Rollback"
+        }
+    },
+    "metrics": {
+        "token_usage": {
+            "zh": "Token 消耗",
+            "en": "Token Usage"
+        },
+        "compression_ratio": {
+            "zh": "压缩率",
+            "en": "Compression Ratio"
+        },
+        "memory_usage": {
+            "zh": "内存使用",
+            "en": "Memory Usage"
+        },
+        "cpu_usage": {
+            "zh": "CPU 占用",
+            "en": "CPU Usage"
+        },
+        "vibe_score": {
+            "zh": "Vibe 分数",
+            "en": "Vibe Score"
+        },
+        "logic_score": {
+            "zh": "逻辑分数",
+            "en": "Logic Score"
+        },
+        "test_coverage": {
+            "zh": "测试覆盖率",
+            "en": "Test Coverage"
+        },
+        "merkle_root": {
+            "zh": "Merkle 根",
+            "en": "Merkle Root"
+        }
+    },
+    "alerts": {
+        "memory_warning": {
+            "zh": "内存预警 (80%)",
+            "en": "Memory Warning (80%)"
+        },
+        "memory_critical": {
+            "zh": "内存告急 (100%)",
+            "en": "Memory Critical (100%)"
+        },
+        "merkle_tamper": {
+            "zh": "检测到代码篡改",
+            "en": "Code Tampering Detected"
+        },
+        "token_threshold": {
+            "zh": "Token 阈值告警",
+            "en": "Token Threshold Alert"
+        },
+        "healing_failed": {
+            "zh": "自愈失败",
+            "en": "Healing Failed"
+        },
+        "delivery_blocked": {
+            "zh": "交付被阻止",
+            "en": "Delivery Blocked"
+        }
+    },
+    "buttons": {
+        "start": {
+            "zh": "开始",
+            "en": "Start"
+        },
+        "stop": {
+            "zh": "停止",
+            "en": "Stop"
+        },
+        "resume": {
+            "zh": "恢复",
+            "en": "Resume"
+        },
+        "pause": {
+            "zh": "暂停",
+            "en": "Pause"
+        },
+        "switch_language": {
+            "zh": "Switch to English",
+            "en": "切换到中文"
+        },
+        "run_audit": {
+            "zh": "运行审计",
+            "en": "Run Audit"
+        },
+        "generate_signoff": {
+            "zh": "生成签名",
+            "en": "Generate Sign-off"
+        },
+        "heal_now": {
+            "zh": "立即修复",
+            "en": "Heal Now"
+        }
+    },
+    "labels": {
+        "project_name": {
+            "zh": "项目名称",
+            "en": "Project Name"
+        },
+        "current_state": {
+            "zh": "当前状态",
+            "en": "Current State"
+        },
+        "progress": {
+            "zh": "进度",
+            "en": "Progress"
+        },
+        "elapsed_time": {
+            "zh": "已用时间",
+            "en": "Elapsed Time"
+        },
+        "expert_comments": {
+            "zh": "专家评论",
+            "en": "Expert Comments"
+        },
+        "blocking_issues": {
+            "zh": "阻塞问题",
+            "en": "Blocking Issues"
+        },
+        "quality_report": {
+            "zh": "质量报告",
+            "en": "Quality Report"
+        },
+        "delivery_status": {
+            "zh": "交付状态",
+            "en": "Delivery Status"
+        }
+    },
+    "messages": {
+        "audit_success": {
+            "zh": "审计通过",
+            "en": "Audit Passed"
+        },
+        "audit_failed": {
+            "zh": "审计失败",
+            "en": "Audit Failed"
+        },
+        "healing_in_progress": {
+            "zh": "正在自愈...",
+            "en": "Healing in progress..."
+        },
+        "delivery_approved": {
+            "zh": "交付已批准",
+            "en": "Delivery Approved"
+        },
+        "delivery_rejected": {
+            "zh": "交付被拒绝",
+            "en": "Delivery Rejected"
+        },
+        "compression_complete": {
+            "zh": "压缩完成",
+            "en": "Compression Complete"
+        },
+        "merkle_verified": {
+            "zh": "Merkle 验证通过",
+            "en": "Merkle Verified"
+        },
+        "merkle_mismatch": {
+            "zh": "Merkle 不匹配",
+            "en": "Merkle Mismatch"
+        }
+    },
+    "strategist_comments": {
+        "architecture_approved": {
+            "zh": "架构已批准",
+            "en": "Architecture Approved"
+        },
+        "logic_concerns": {
+            "zh": "逻辑存在疑虑",
+            "en": "Logic Concerns"
+        },
+        "performance_optimization_needed": {
+            "zh": "需要性能优化",
+            "en": "Performance Optimization Needed"
+        },
+        "security_review_required": {
+            "zh": "需要安全审查",
+            "en": "Security Review Required"
+        },
+        "compression_verified": {
+            "zh": "压缩引擎已验证",
+            "en": "Compression Engine Verified"
+        },
+        "merkle_detection_perfect": {
+            "zh": "Merkle Root: 100% 检测率, 73ms 平均",
+            "en": "Merkle Root: 100% detection rate, 73ms avg"
+        },
+        "error_passthrough_perfect": {
+            "zh": "错误穿透: 100% 实时传递",
+            "en": "Error Passthrough: 100% real-time delivery"
+        },
+        "telemetry_excellent": {
+            "zh": "遥测: 975.7 msg/s, 15.6% CPU",
+            "en": "Telemetry: 975.7 msg/s, 15.6% CPU"
+        },
+        "production_ready": {
+            "zh": "生产就绪 - 已批准",
+            "en": "Production ready - APPROVED"
+        }
+    }
+}

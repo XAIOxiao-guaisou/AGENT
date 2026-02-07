@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Dict, Set, List, Tuple, Optional
 from dataclasses import dataclass, field
 import re
+from antigravity.utils.io_utils import safe_read
 
 
 @dataclass
@@ -486,7 +487,8 @@ class ContextCompressor:
                 return cached_hash
         
         # Calculate and cache
-        content = file_path.read_text(encoding='utf-8')
+        # v1.0.1 Hotfix: Use safe_read for UTF-8 resilience
+        content = safe_read(file_path)
         normalized_content = self._normalize_line_endings(content)
         file_hash = hashlib.sha256(normalized_content.encode('utf-8')).hexdigest()
         

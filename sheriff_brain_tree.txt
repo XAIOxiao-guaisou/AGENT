@@ -1,0 +1,25 @@
+Folder PATH listing for volume 软件
+Volume serial number is ABBE-9020
+D:\桌面\AGENT\PROJECTS\SHERIFF_BRAIN_UPGRADE
+|   ADVANCED_TUNING_FIXES.md
+|   autonomous_auditor.py
+|   autonomous_auditor_additional_methods.py
+|   autonomous_auditor_final_methods.py
+|   immune_memory.db
+|   INDUSTRIAL_PATCHES_CODE.md
+|   local_reasoning.py
+|   mission_orchestrator.py
+|   mission_orchestrator_serialization.py
+|   PLAN.md
+|   rca_immune_system.py
+|   sheriff_strategist.py
+|   test.json
+|   
++---.antigravity_audits
++---config
+|       exchange_protocol.json
+|       
+\---__pycache__
+        local_reasoning.cpython-313.pyc
+        mission_orchestrator.cpython-313.pyc
+        

@@ -224,7 +224,6 @@ def track_performance(func: Callable) -> Callable:
         装饰后的函数
     """
     from functools import wraps
-    import time
     
     @wraps(func)
     def wrapper(*args, **kwargs):

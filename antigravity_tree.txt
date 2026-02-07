@@ -1,0 +1,93 @@
+Folder PATH listing for volume 软件
+Volume serial number is ABBE-9020
+D:\桌面\AGENT\ANTIGRAVITY
+|   auditor.py
+|   audit_history.py
+|   autonomous_auditor.py
+|   change_detector.py
+|   config.py
+|   context_compressor.py
+|   context_manager.py
+|   cyberpunk_hud.py
+|   dashboard.py
+|   delivery_gate.py
+|   dependency_analyzer.py
+|   doc_generator.py
+|   env_checker.py
+|   file_lock_manager.py
+|   healing_executor.py
+|   local_reasoning.py
+|   mission_orchestrator.py
+|   monitor.py
+|   notifier.py
+|   p3_performance_monitor_ui.py
+|   p3_project_selector.py
+|   p3_root_detector.py
+|   p3_scaffolding_code.py
+|   p3_state_manager.py
+|   p3_translations.py
+|   performance_monitor.py
+|   precision_healer.py
+|   quality_tower.py
+|   rca_immune_system.py
+|   shadow_validator.py
+|   sheriff_strategist.py
+|   state_manager.py
+|   strategist_protocol.py
+|   telemetry_queue.py
+|   test_runner.py
+|   utils.py
+|   vibe_check.py
+|   __init__.py
+|   
++---debug_monitor
+|   |   alert_manager.py
+|   |   config.json
+|   |   error_tracker.py
+|   |   storage.py
+|   |   ui_components.py
+|   |   __init__.py
+|   |   
+|   \---__pycache__
+|           alert_manager.cpython-313.pyc
+|           error_tracker.cpython-313.pyc
+|           storage.cpython-313.pyc
+|           ui_components.cpython-313.pyc
+|           __init__.cpython-313.pyc
+|           
+\---__pycache__
+        auditor.cpython-313.pyc
+        audit_history.cpython-313.pyc
+        autonomous_auditor.cpython-313.pyc
+        change_detector.cpython-313.pyc
+        config.cpython-313.pyc
+        context_compressor.cpython-313.pyc
+        context_manager.cpython-313.pyc
+        cyberpunk_hud.cpython-313.pyc
+        delivery_gate.cpython-313.pyc
+        dependency_analyzer.cpython-313.pyc
+        doc_generator.cpython-313.pyc
+        env_checker.cpython-313.pyc
+        file_lock_manager.cpython-313.pyc
+        healing_executor.cpython-313.pyc
+        local_reasoning.cpython-313.pyc
+        mission_orchestrator.cpython-313.pyc
+        monitor.cpython-313.pyc
+        notifier.cpython-313.pyc
+        p3_root_detector.cpython-313.pyc
+        p3_state_manager.cpython-313.pyc
+        performance_monitor.cpython-313.pyc
+        precision_healer.cpython-313.pyc
+        quality_tower.cpython-313.pyc
+        rca_immune_system.cpython-313.pyc
+        shadow_validator.cpython-313.pyc
+        sheriff_strategist.cpython-313.pyc
+        state_manager.cpython-313.pyc
+        strategist_protocol.cpython-313.pyc
+        telemetry_queue.cpython-313.pyc
+        test_runner.cpython-313-pytest-9.0.2.pyc
+        test_runner.cpython-313.pyc
+        utils.cpython-313.pyc
+        vibe_check.cpython-313.pyc
+        __init__.cpython-313.pyc
+        

@@ -12,7 +12,13 @@ import asyncio
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# Import the core module
+# Enable debug monitoring / 启用调试监控
+from antigravity.debug_monitor import enable_monitoring, show_debug_panel
+enable_monitoring()
+
+from antigravity.p3_state_manager import P3StateManager
+from antigravity.vibe_check import VibeChecker
+from antigravity.performance_monitor import PerformanceMonitor
 from core.小红书爬虫_core import 小红书爬虫Core
 
 

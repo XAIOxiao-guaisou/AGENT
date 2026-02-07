@@ -120,6 +120,10 @@ class AutonomousAuditor:
         self.local_reasoner = LocalReasoningEngine(self.project_root)
         self.remote_strategist = SheriffStrategist()
         
+        # Phase 20: Initialize RCA Immune System
+        from .rca_immune_system import RCAImmuneSystem
+        self.rca_system = RCAImmuneSystem(self.project_root)
+        
         # State
         self.current_idea: Optional[str] = None
         self.execution_log: List[Dict] = []

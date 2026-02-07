@@ -1470,6 +1470,94 @@ with st.container():
     except Exception as e:
         st.error(t("perf_data_error").format(e))
 
+# --- Quality Tower Section / 质量之塔 ---
+st.markdown("---")
+st.header("🏰 Quality Tower - 质量看板")
+st.caption("Sheriff Brain 的最后一道防线 - The Last Line of Defense")
+
+try:
+    from antigravity.quality_tower import (
+        display_ceremonial_stamps,
+        display_blocking_issues,
+        display_trend_radar,
+        display_healing_buttons,
+        run_delivery_gate_audit,
+        get_latest_audit_result
+    )
+    from antigravity.audit_history import AuditHistoryManager
+    from pathlib import Path
+    
+    # Project selector
+    st.subheader("📦 选择项目 (Select Project)")
+    
+    # Get available projects
+    projects_dir = Path("projects")
+    if projects_dir.exists():
+        project_names = [p.name for p in projects_dir.iterdir() if p.is_dir() and not p.name.startswith('.')]
+    else:
+        project_names = []
+    
+    if not project_names:
+        st.warning("未找到项目。请先创建项目。")
+    else:
+        selected_project_name = st.selectbox(
+            "项目",
+            project_names,
+            key="quality_tower_project"
+        )
+        
+        selected_project = {
+            'name': selected_project_name,
+            'root': str(projects_dir / selected_project_name)
+        }
+        
+        # Audit controls
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            if st.button("🔍 运行质量审计 (Run Audit)", type="primary", use_container_width=True):
+                result = run_delivery_gate_audit(selected_project)
+                if result:
+                    st.success("✅ 审计完成！")
+        
+        with col2:
+            # Show audit history stats
+            history_manager = AuditHistoryManager(Path(selected_project['root']))
+            stats = history_manager.get_directory_stats()
+            st.caption(f"📊 历史: {stats['total_files']} 文件")
+            st.caption(f"💾 {stats['total_size_mb']:.1f}/{stats['max_size_mb']}MB")
+        
+        # Display results
+        result = get_latest_audit_result(selected_project)
+        
+        if result:
+            # Dual-signature stamps
+            st.markdown("---")
+            display_ceremonial_stamps(result)
+            
+            # Blocking issues
+            st.markdown("---")
+            display_blocking_issues(result)
+            
+            # Trend radar chart
+            st.markdown("---")
+            display_trend_radar(selected_project, history_manager)
+            
+            # Interactive healing buttons
+            st.markdown("---")
+            display_healing_buttons(result, selected_project)
+        else:
+            st.info("💡 点击上方按钮运行质量审计")
+
+except ImportError as e:
+    st.warning(f"⚠️ Quality Tower 模块未找到: {e}")
+    st.caption("请确保 delivery_gate.py 和 quality_tower.py 已正确安装")
+except Exception as e:
+    st.error(f"❌ Quality Tower 错误: {e}")
+    import traceback
+    with st.expander("查看详细错误"):
+        st.code(traceback.format_exc())
+
 # Auto-refresh every 5 seconds
 st.markdown("---")
 st.caption(t("powered_by"))

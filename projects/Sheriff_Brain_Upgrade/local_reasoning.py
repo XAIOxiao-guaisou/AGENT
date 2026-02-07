@@ -136,45 +136,6 @@ class IntentMapper:
             return True
         
         return False
-        """
-        Analyze idea and extract intents / 分析 Idea 并提取意图
-        
-        Args:
-            idea: High-level idea description
-            
-        Returns:
-            List of recognized intents sorted by confidence
-        """
-        idea_lower = idea.lower()
-        intents = []
-        
-        for category, config in self.INTENT_PATTERNS.items():
-            # Count keyword matches
-            matched_keywords = []
-            for keyword in config['keywords']:
-                if keyword in idea_lower:
-                    matched_keywords.append(keyword)
-            
-            if matched_keywords:
-                # Calculate confidence
-                confidence = (len(matched_keywords) / len(config['keywords'])) * config['weight']
-                confidence = min(confidence, 1.0)  # Cap at 1.0
-                
-                # Suggest actions based on category
-                actions = self._suggest_actions(category)
-                
-                intent = Intent(
-                    category=category,
-                    confidence=confidence,
-                    keywords=matched_keywords,
-                    suggested_actions=actions
-                )
-                intents.append(intent)
-        
-        # Sort by confidence (highest first)
-        intents.sort(key=lambda x: x.confidence, reverse=True)
-        
-        return intents
     
     def _suggest_actions(self, category: str) -> List[str]:
         """

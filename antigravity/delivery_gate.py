@@ -127,14 +127,16 @@ class DeliveryGate:
     # Semantic Soul Thresholds
     MIN_LOGIC_SCORE = 90.0
     
-    def __init__(self, project_root: Path):
+    def __init__(self, project_root):
         """
         Initialize delivery gate / 初始化交付门控
         
         Args:
-            project_root: Project root directory / 项目根目录
+            project_root: Project root directory / 项目根目录 (str or Path)
         """
-        self.project_root = project_root
+        # EMERGENCY FIX (Step 1.1): Ensure project_root is always a Path object
+        # This prevents AttributeError when calling .glob() in calculate_merkle_root
+        self.project_root = Path(project_root) if not isinstance(project_root, Path) else project_root
         
         # Import components (lazy to avoid circular dependencies)
         from .local_reasoning import LocalReasoningEngine

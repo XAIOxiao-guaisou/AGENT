@@ -66,15 +66,22 @@ class SheriffStrategist:
     关键: 此战略官从不编写代码,只提供指导。
     """
     
-    def __init__(self, deepseek_client=None):
+    def __init__(self, deepseek_client=None, project_root: str = "./"):
         """
         Initialize strategist / 初始化战略官
         
+        Phase 21 Enhancement: Add context compressor
+        
         Args:
             deepseek_client: DeepSeek API client (optional for now)
+            project_root: Project root for context compression
         """
         self.deepseek_client = deepseek_client
         self.audit_history: List[Dict] = []
+        
+        # Phase 21 Enhancement: Context compressor for 92% compression
+        from .context_compressor import ContextCompressor
+        self.compressor = ContextCompressor(project_root=project_root)
     
     def tune_plan(self, plan: Dict) -> OptimizedPlan:
         """
@@ -216,18 +223,59 @@ Output format (JSON):
             feedback=response.get('feedback', '')
         )
     
-    def final_sign_off(self, project: Dict) -> SignOffResult:
+    def final_sign_off(
+        self, 
+        project: Dict,
+        incremental: bool = False,
+        changed_functions: List[str] = None
+    ) -> SignOffResult:
         """
         Final sign-off for project delivery / 项目交付的最终签署
         
+        Phase 21 Enhancement: With context compression and checksum
+        
         Args:
             project: Project information / 项目信息
+            incremental: Whether to use incremental audit
+            changed_functions: List of changed functions for incremental audit
             
         Returns:
             Sign-off result / 签署结果
         """
+        # Phase 21: Compress context before audit
+        compressed_context = None
+        context_checksum = None
+        
+        if 'files' in project and 'modified_files' in project:
+            try:
+                compression_result = self.compressor.compress_with_dependencies(
+                    modified_files=set(project.get('modified_files', [])),
+                    all_files=project.get('files', {})
+                )
+                
+                compressed_context = compression_result.compressed_context
+                context_checksum = compression_result.context_checksum
+                
+                # Add to project for audit
+                project['compressed_context'] = compressed_context
+                project['context_checksum'] = context_checksum
+                project['compression_ratio'] = compression_result.compression_ratio
+                
+            except Exception as e:
+                print(f"⚠️ Context compression failed: {e}")
+                # Fallback to uncompressed
+        
         # Perform logic audit
         audit_result = self._logic_audit(project)
+        
+        # Phase 21: Check for CONTEXT_INSUFFICIENT error
+        if audit_result.get('error_code') == 'CONTEXT_INSUFFICIENT':
+            print("\n⚠️ CONTEXT_INSUFFICIENT detected - attempting soft fallback")
+            
+            # Reduce compression level and retry
+            if self.compressor.reduce_compression_level():
+                print("   Retrying with reduced compression...")
+                return self.final_sign_off(project, incremental, changed_functions)
         
         # Decision criteria
         approved = (

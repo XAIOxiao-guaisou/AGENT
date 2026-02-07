@@ -95,10 +95,15 @@ class RCAImmuneSystem:
     2. Analyze severity (分析严重性)
     3. Attempt auto-fix (尝试自动修复)
     4. Escalate if needed (必要时升级)
+    
+    Phase 21 P0 Enhancements:
+    - Fuzzy error signature matching (模糊错误指纹匹配)
+    - Cooldown period for locked projects (项目锁定冷却期)
     """
     
     # Phase 21: Immune Fatigue Protection
     MAX_HEALING_DEPTH = 3  # 免疫疲劳阈值 - Maximum healing attempts
+    COOLDOWN_PERIOD = 300  # 冷却期 (5 minutes in seconds)
     
     def __init__(self, project_root: Optional[Path] = None):
         """
@@ -114,6 +119,9 @@ class RCAImmuneSystem:
         # Phase 21: Healing stack for fatigue protection
         self.healing_stack: List[str] = []  # Track healing chain
         
+        # Phase 21 P0: Cooldown management
+        self.locked_projects: Dict[str, datetime] = {}  # project_id → lock_time
+        
         # Auto-fix strategies
         self.auto_fix_strategies = {
             'ImportError': self._fix_import_error,
@@ -123,6 +131,83 @@ class RCAImmuneSystem:
             'NameError': self._fix_name_error,
         }
     
+    def _generate_error_signature(self, snapshot: ErrorSnapshot) -> str:
+        """
+        Generate fuzzy error signature / 生成模糊错误指纹
+        
+        Phase 21 P0: Focus on error type and location, ignore dynamic content.
+        专注于错误类型和位置，忽略动态内容。
+        
+        Args:
+            snapshot: Error snapshot / 错误快照
+            
+        Returns:
+            Fuzzy error signature / 模糊错误指纹
+        """
+        # Use error type + file + line (ignore message)
+        signature = f"{snapshot.error_type}:{snapshot.file_path}:{snapshot.line_number}"
+        
+        # For import errors, include module name
+        if snapshot.error_type in ['ImportError', 'ModuleNotFoundError']:
+            match = re.search(r"No module named '(\w+)'", snapshot.message)
+            if match:
+                module = match.group(1)
+                signature = f"{snapshot.error_type}:module={module}"
+        
+        return signature
+    
+    def _lock_project(self, project_id: str):
+        """
+        Lock project with cooldown period / 锁定项目并设置冷却期
+        
+        Args:
+            project_id: Project identifier / 项目标识符
+        """
+        self.locked_projects[project_id] = datetime.now()
+        print(f"🔒 Project locked: {project_id}")
+        print(f"   Cooldown period: {self.COOLDOWN_PERIOD}s ({self.COOLDOWN_PERIOD/60:.1f} minutes)")
+    
+    def _is_in_cooldown(self, project_id: str) -> bool:
+        """
+        Check if project is in cooldown / 检查项目是否在冷却期
+        
+        Args:
+            project_id: Project identifier / 项目标识符
+            
+        Returns:
+            True if in cooldown / 如果在冷却期则返回 True
+        """
+        if project_id not in self.locked_projects:
+            return False
+        
+        lock_time = self.locked_projects[project_id]
+        elapsed = (datetime.now() - lock_time).total_seconds()
+        
+        if elapsed >= self.COOLDOWN_PERIOD:
+            # Cooldown expired, remove lock
+            del self.locked_projects[project_id]
+            print(f"🧊 Cooldown expired for project: {project_id}")
+            return False
+        
+        return True
+    
+    def _get_cooldown_remaining(self, project_id: str) -> float:
+        """
+        Get remaining cooldown time in seconds / 获取剩余冷却时间（秒）
+        
+        Args:
+            project_id: Project identifier / 项目标识符
+            
+        Returns:
+            Remaining cooldown time / 剩余冷却时间
+        """
+        if project_id not in self.locked_projects:
+            return 0.0
+        
+        lock_time = self.locked_projects[project_id]
+        elapsed = (datetime.now() - lock_time).total_seconds()
+        return max(0, self.COOLDOWN_PERIOD - elapsed)
+    
     def on_error_captured(self, error: Exception, context: Optional[Dict] = None) -> FixResult:
         """
         Main entry point when error is captured / 捕获错误时的主入口
@@ -131,6 +216,7 @@ class RCAImmuneSystem:
         这是"免疫响应" - 检测到感染（错误）时触发！
         
         Phase 21: Added immune fatigue protection to prevent infinite loops.
+        Phase 21 P0: Added fuzzy signature matching and cooldown period.
         
         Args:
             error: Exception object / 异常对象
@@ -141,13 +227,28 @@ class RCAImmuneSystem:
         """
         print(f"\n🦠 Immune System Activated! Error detected: {type(error).__name__}")
         
+        # 0. Check cooldown period
+        project_id = context.get('project_id', 'default') if context else 'default'
+        
+        if self._is_in_cooldown(project_id):
+            cooldown_remaining = self._get_cooldown_remaining(project_id)
+            print(f"🧊 Project in cooldown: {cooldown_remaining:.0f}s remaining ({cooldown_remaining/60:.1f} min)")
+            
+            return FixResult(
+                success=False,
+                action='cooldown_active',
+                details=f"Project locked for {cooldown_remaining:.0f}s. Please wait for cooldown to expire."
+            )
+        
         # 1. Extract snapshot (提取快照)
         snapshot = self._extract_snapshot(error, context)
         print(f"📸 Snapshot captured: {snapshot.error_type} at {snapshot.file_path}:{snapshot.line_number}")
         
-        # 2. Check for immune fatigue (检查免疫疲劳)
-        error_signature = f"{snapshot.error_type}:{snapshot.message[:50]}"
+        # 2. Generate fuzzy error signature (生成模糊错误指纹)
+        error_signature = self._generate_error_signature(snapshot)
+        print(f"🔍 Error signature: {error_signature}")
         
+        # 3. Check for immune fatigue (检查免疫疲劳)
         if error_signature in self.healing_stack:
             # Detected recursive healing attempt
             depth = self.healing_stack.count(error_signature)
@@ -160,20 +261,23 @@ class RCAImmuneSystem:
                 # Clear healing stack to prevent further attempts
                 self.healing_stack.clear()
                 
+                # Lock project with cooldown
+                self._lock_project(project_id)
+                
                 # Force escalation to remote expert
                 fix_result = self._force_expert_escalation(snapshot, context or {}, depth)
                 self._log_fix(snapshot, fix_result)
                 return fix_result
         
-        # 3. Add to healing stack
+        # 4. Add to healing stack
         self.healing_stack.append(error_signature)
         
         try:
-            # 4. Analyze severity (分析严重性)
+            # 5. Analyze severity (分析严重性)
             severity = self._analyze_severity(snapshot)
             print(f"🔍 Severity analysis: {severity}")
             
-            # 5. Check if we can auto-fix (检查是否可以自动修复)
+            # 6. Check if we can auto-fix (检查是否可以自动修复)
             if severity in ['LOW', 'MEDIUM'] and self._can_auto_fix(snapshot):
                 print(f"💊 Attempting auto-fix...")
                 fix_result = self._auto_fix(snapshot)
@@ -192,7 +296,7 @@ class RCAImmuneSystem:
                     if error_signature in self.healing_stack:
                         self.healing_stack.remove(error_signature)
             
-            # 6. Escalate to remote expert (升级到远程专家)
+            # 7. Escalate to remote expert (升级到远程专家)
             if snapshot.retry_count > 2 or severity == 'HIGH':
                 print(f"🚨 Escalating to remote expert (retry: {snapshot.retry_count}, severity: {severity})")
                 fix_result = self._escalate_to_expert(snapshot, context or {})
@@ -202,7 +306,7 @@ class RCAImmuneSystem:
                     self.healing_stack.remove(error_signature)
                 return fix_result
             
-            # 7. No fix available
+            # 8. No fix available
             print(f"❌ No auto-fix available, manual intervention required")
             fix_result = FixResult(
                 success=False,

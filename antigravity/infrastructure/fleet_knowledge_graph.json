@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "last_updated": "2026-02-08T15:48:20.413173",
+  "projects": {
+    "bad_project": {
+      "description": "No description available.",
+      "version": "0.1.0",
+      "exports": [],
+      "tech_stack": []
+    },
+    "vortex_core": {
+      "description": "Goal: Provide high-performance async connection pooling for the fleet.",
+      "version": "1.0.0",
+      "exports": [
+        {
+          "name": "AsyncConnectionPool",
+          "type": "class",
+          "file": "core/connection.py",
+          "docstring": "Vortex Core Connection Pool.High-performance async networking."
+        }
+      ],
+      "tech_stack": [],
+      "last_audit": "2026-02-07T10:00:00"
+    },
+    "vortex_scraper": {
+      "description": "Goal: Scrape web data using Vortex Core's async engine.",
+      "version": "0.1.0",
+      "exports": [
+        {
+          "name": "ScraperBot",
+          "type": "class",
+          "file": "core/scraper.py",
+          "docstring": "Scraper using Vortex Core."
+        }
+      ],
+      "tech_stack": []
+    }
+  },
+  "relationships": [
+    {
+      "source": "vortex_scraper",
+      "target": "vortex_core",
+      "type": "import",
+      "strength": 5
+    }
+  ]
+}

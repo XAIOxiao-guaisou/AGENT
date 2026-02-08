@@ -215,6 +215,22 @@ class IntentMapper:
         )
 
 
+
+class ComplexTaskSplitter:
+    """
+    Phase 19: Swarm Intelligence.
+    Splits complex objectives into atomic sub-tasks.
+    """
+    def split(self, idea: str) -> List[str]:
+        # Simple heuristic: split by 'and', 'with', ','
+        # "Build a login system and a dashboard with metrics"
+        # -> ["Build a login system", "a dashboard", "metrics"]
+        # Refined regex to avoid splitting "user and password" or other common phrases?
+        # For v1, keeps it simple.
+        parts = re.split(r' and | with |,\s*', idea, flags=re.IGNORECASE)
+        tasks = [p.strip() for p in parts if len(p.strip()) > 5] # Min length filter
+        return tasks if len(tasks) > 1 else []
+
 class LocalReasoningEngine:
     """
     Local Reasoning Engine - 本地推理引擎
@@ -227,17 +243,53 @@ class LocalReasoningEngine:
         self.project_root = project_root or Path(".")
         self.constraint_set = ConstraintSet()
         self.intent_mapper = IntentMapper()
+        self.task_splitter = ComplexTaskSplitter()
     
     def draft_plan(self, idea: str) -> Dict:
         """
         Draft execution plan based on intent / 基于意图起草执行计划
         
-        Args:
-            idea: User's idea / 用户想法
-            
-        Returns:
-            Execution plan / 执行计划
+        Phase 19: Support Swarm Decomposition
         """
+        # 0. Swarm Decomposition
+        subtasks = self.task_splitter.split(idea)
+        swarm_plan = None
+        
+        if subtasks:
+             print(f"🐝 SWARM: Detected complex task. Splitting into {len(subtasks)} sub-tasks: {subtasks}")
+             swarm_plan = {
+                 'type': 'swarm_composite',
+                 'intent': idea,
+                 'subtasks': [],
+                 'tasks': []
+             }
+             
+             # Process each subtask
+             try:
+                 from antigravity.core.knowledge_graph import FleetKnowledgeGraph
+                 gkg = FleetKnowledgeGraph.get_instance()
+                 
+                 for sub in subtasks:
+                     matches = gkg.find_fleet_capability(sub, top_k=1)
+                     assigned_node = matches[0]['project_id'] if matches else "local"
+                     score = matches[0]['score'] if matches else 0.0
+                     
+                     print(f"   - Subtask: '{sub}' -> Assigned to [{assigned_node}] (Score: {score:.2f})")
+                     
+                     swarm_plan['subtasks'].append({
+                         'intent': sub,
+                         'assigned_node': assigned_node,
+                         'confidence': score
+                     })
+                     
+                 # Return the composite plan immediately
+                 return swarm_plan
+                 
+             except Exception as e:
+                 print(f"⚠️ Swarm Assignment Failed: {e}")
+                 # Fallback to normal drafting if swarm fails
+
+
         # 1. Map intent
         intent = self.intent_mapper.map(idea)
         
@@ -306,6 +358,30 @@ class LocalReasoningEngine:
                 name = match.get('name')
                 
                 if pid and name:
+                     score = match.get('score', 0)
+                     
+                     # Phase 18: Auto-Refactor (Redundancy Cleanup)
+                     if score > 0.95:
+                         print(f"♻️ REDUNDANCY DETECTED: Local intent matches [{pid}] with score {score}")
+                         
+                         # Trigger Event
+                         from antigravity.infrastructure.telemetry_queue import TelemetryQueue, TelemetryEventType
+                         TelemetryQueue.push_event(TelemetryEventType.STATE_CHANGE, {
+                             'event': 'REDUNDANCY_DETECTED',
+                             'intent': intent.primary_goal,
+                             'match': pid,
+                             'score': score
+                         })
+                         
+                         # Add Quarantine Action to Plan
+                         # We assume the user creates a file matching the intent?
+                         # Or we just flag it.
+                         plan.setdefault('quarantine', []).append({
+                             'reason': 'redundant_capability',
+                             'replacement': f"fleet.{pid}",
+                             'score': score
+                         })
+                         
                      # Anti-Hallucination: Verify project exists/is active?
                      # For now, just inject.
                      import_stmt = f"fleet.{pid}"
@@ -314,7 +390,6 @@ class LocalReasoningEngine:
                          # Also suggest usage?
                          print(f"🧠 SYNAPSE: Auto-linked [{pid}] for '{intent.primary_goal}'")
                          # Telemetry
-                         from antigravity.infrastructure.telemetry_queue import TelemetryQueue, TelemetryEventType
                          TelemetryQueue.push_event(TelemetryEventType.STATE_CHANGE, {
                              'event': 'SYNAPSE_PROBE_SUCCESS',
                              'intent': intent.primary_goal,

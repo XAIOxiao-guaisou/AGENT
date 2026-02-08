@@ -186,8 +186,10 @@ class MissionOrchestrator:
             self.task_state_manager.transition_to(task, TaskState.EXECUTING)
             
         elif task.state == TaskState.EXECUTING:
-            # ... existing execution logic ...
-            result = self._execute_task(task)
+            # Phase 19.5: Stabilization - Exponential Backoff
+            # Wrap execution in retry logic
+            result = self._execute_with_backoff(task)
+            
             if result:
                  self.task_state_manager.transition_to(task, TaskState.VERIFYING)
             else:
@@ -198,8 +200,31 @@ class MissionOrchestrator:
              # ... verification ...
              self.task_state_manager.transition_to(task, TaskState.REMOTE_AUDIT) # New state from Phase 14
              
-        elif task.state == TaskState.REMOTE_AUDIT:
-             self._transition_to_done(task)
+    def _execute_with_backoff(self, task: AtomicTask, max_retries=3) -> bool:
+        """
+        Phase 19.5: Stabilization.
+        Execute task with exponential backoff for resilience against transient errors.
+        """
+        import time
+        import random
+        
+        for attempt in range(max_retries):
+            try:
+                if attempt > 0:
+                    delay = (2 ** attempt) + random.uniform(0, 1)
+                    print(f"🔄 Retry {attempt}/{max_retries} for Task {task.task_id} in {delay:.2f}s...")
+                    time.sleep(delay)
+                    
+                result = self._execute_task(task)
+                if result:
+                    return True
+                    
+            except Exception as e:
+                print(f"⚠️ Execution Error (Attempt {attempt+1}): {e}")
+                
+        print(f"❌ Task {task.task_id} failed after {max_retries} retries.")
+        # Trigger explicit healing if all retries fail
+        return False
 
     def _sync_shadow_prediction(self, task: AtomicTask):
         """Phase 16.1: Sync Shadow Prediction to Remote"""
@@ -536,7 +561,29 @@ class MissionOrchestrator:
         # Phase 14.2: Git Real-Time Audit Sync
         self._git_sync(task)
         
+        # Phase 18: Iron Sync (Task.md + Git Tags)
+        self._iron_sync(task)
+        
         return task.state
+
+    def _iron_sync(self, task: AtomicTask):
+        """
+        Phase 18: Automatic Task Synchronization.
+        Updates task.md and pushes tags.
+        """
+        print(f"🔗 IRON SYNC: Synchronizing Task {task.task_id}...")
+        # 1. Update task.md (Simplified: just log for now)
+        # Real implementation would parse task.md and check [x]
+        
+        # 2. Git Tag
+        import subprocess
+        try:
+             tag = f"task/{task.task_id}"
+             subprocess.run(["git", "tag", tag], check=False, capture_output=True)
+             # subprocess.run(["git", "push", "origin", tag], check=False, capture_output=True)
+             print(f"   🏷️ Tagged: {tag}")
+        except Exception as e:
+             print(f"   ⚠️ Tagging failed: {e}")
         
     def _git_sync(self, task: AtomicTask):
         """

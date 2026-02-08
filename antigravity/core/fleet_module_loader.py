@@ -36,8 +36,6 @@ class FleetModuleLoader:
             
         project_root = Path(project_meta.path).resolve()
             
-        project_root = Path(project_meta.path).resolve()
-            
         # 2. Physical Anchor: Instant Merkle Verification
         # We perform a FORCED incremental hash audit
         if DeliveryGate:
@@ -77,28 +75,56 @@ class FleetModuleLoader:
         virtual_pkg = f"fleet.{target_project_id}"
         virtual_module_name = f"{virtual_pkg}.{module_name}"
         
-        # Check if already loaded
         if virtual_module_name in sys.modules:
             return sys.modules[virtual_module_name]
             
         # Construct path to the module file
-        # Assuming module_name is like "core.utils" -> "core/utils.py"
-        module_rel_path = module_name.replace('.', '/') + ".py"
-        module_file = project_root / module_rel_path
-        
-        if not module_file.exists():
-            # Try as package (init.py)
-            module_file = project_root / module_name.replace('.', '/') / "__init__.py"
-            if not module_file.exists():
-                 raise ImportError(f"Module '{module_name}' not found in project '{target_project_id}'")
+        # Phase 18: Synaptic Latency Telemetry
+        import time
+        start_t = time.perf_counter()
         
         try:
+            module_rel_path = module_name.replace('.', '/') + ".py"
+            module_file = project_root / module_rel_path
+            
+            if not module_file.exists():
+                # Try as package (init.py)
+                module_file = project_root / module_name.replace('.', '/') / "__init__.py"
+                if not module_file.exists():
+                     raise ImportError(f"Module '{module_name}' not found in project '{target_project_id}'")
+            
             logger.info(f"🧠 Neural Nexus: Mounting {virtual_module_name}...")
             spec = importlib.util.spec_from_file_location(virtual_module_name, module_file)
             if spec and spec.loader:
                 module = importlib.util.module_from_spec(spec)
                 sys.modules[virtual_module_name] = module
                 spec.loader.exec_module(module)
+                
+                # Telemetry
+                end_t = time.perf_counter()
+                elapsed = (end_t - start_t) * 1000  # ms
+                
+                from antigravity.infrastructure.telemetry_queue import TelemetryQueue, TelemetryEventType
+                
+                # Phase 19: Latency Thresholds
+                if elapsed > 300:
+                    print(f"⚡ SLOT WARNING: Synaptic Latency {elapsed:.2f}ms > 300ms!")
+                    print(f"   Suggestion: Consider LOCAL_MIRRORING for '{target_project_id}'")
+                    
+                    TelemetryQueue.push_event(TelemetryEventType.PERFORMANCE_KNOB, {
+                        'event': 'SYNAPTIC_DRAG',
+                        'project': target_project_id,
+                        'latency_ms': elapsed,
+                        'suggestion': 'LOCAL_MIRRORING'
+                    })
+                
+                TelemetryQueue.push_event(TelemetryEventType.METRIC, {
+                    'metric': 'SYNAPTIC_LATENCY',
+                    'project': target_project_id,
+                    'latency_ms': elapsed,
+                    'timestamp': datetime.now().isoformat()
+                })
+                
                 logger.info(f"✅ Synapse Established: {virtual_module_name}")
                 return module
             else:

@@ -18,6 +18,7 @@ from typing import List, Dict, Optional, Set
 from datetime import datetime
 import networkx as nx
 import json
+from pathlib import Path
 
 
 class TaskState(Enum):
@@ -28,6 +29,7 @@ class TaskState(Enum):
     SELF_CHECK = "self_check"
     REMOTE_AUDIT = "remote_audit"
     HEALING = "healing"
+    PAUSED = "paused" # Deep Tuning: Dampening state
     DONE = "done"
 
 
@@ -46,6 +48,9 @@ class AtomicTask:
     validation_script: Optional[str] = None
     state: TaskState = TaskState.PENDING
     created_at: datetime = field(default_factory=datetime.now)
+    # v1.1.0 Optimization: Async Circuit Breaker
+    timeout: int = 300 # Default 5 minutes
+    started_at: Optional[datetime] = None
     metadata: Dict = field(default_factory=dict)
     
     def to_dict(self) -> Dict:
@@ -77,11 +82,17 @@ class MissionOrchestrator:
     管理自主任务执行的完整生命周期。
     """
     
-    def __init__(self):
+    
+    def __init__(self, project_root='.'):
+        self.project_root = project_root
         self.tasks: List[AtomicTask] = []
         self.dependency_graph: Optional[nx.DiGraph] = None
         self.current_task: Optional[AtomicTask] = None
         self.execution_history: List[Dict] = []
+        
+        # v1.1.0 Feature: Environment Awareness
+        from antigravity.infrastructure.env_scanner import EnvScanner
+        self.env_scanner = EnvScanner(project_root)
         
     def decompose_idea(self, idea: str) -> List[AtomicTask]:
         """
@@ -228,16 +239,10 @@ class MissionOrchestrator:
     def _get_task_by_id(self, task_id: str) -> Optional[AtomicTask]:
         """Get task by ID / 通过 ID 获取任务"""
         return next((t for t in self.tasks if t.task_id == task_id), None)
-    
+
     def step(self, task: Optional[AtomicTask] = None) -> TaskState:
         """
         Execute one step of the state machine / 执行状态机的一步
-        
-        Args:
-            task: Task to step (uses current_task if None) / 要执行的任务
-            
-        Returns:
-            New state after step / 步骤后的新状态
         """
         if task is None:
             task = self.current_task
@@ -250,17 +255,89 @@ class MissionOrchestrator:
             case TaskState.PENDING:
                 return self._transition_to_strategy_review(task)
             case TaskState.STRATEGY_REVIEW:
-                return self._transition_to_executing(task)
+                # Phase 9: Autonomous Healing Check
+                # Before executing, ensure environment is healthy
+                if self._check_environment_health():
+                    return self._transition_to_executing(task)
+                else:
+                    return self.trigger_healing(task)
+            case TaskState.HEALING:
+                # Attempt to fix environment
+                # Healing Dampening (prevent infinite loops)
+                if not hasattr(task, 'retry_count'):
+                    task.retry_count = 0
+                
+                task.retry_count += 1
+                if task.retry_count > 3:
+                     print(f"❌ Healing failed for task {task.task_id} after 3 attempts. PAUSING.")
+                     # In a real system, would push ALERT here
+                     return TaskState.PAUSED
+                
+                print(f"⚕️ Healing Attempt {task.retry_count}/3 for Task {task.task_id}...")
+                if self._attempt_healing():
+                    return self._transition_to_executing(task)
+                else:
+                    # Healing failed? Stay in healing or fail?
+                    # For now, stay in healing or manual intervention needed.
+                    return TaskState.HEALING
             case TaskState.EXECUTING:
                 return self._transition_to_self_check(task)
             case TaskState.SELF_CHECK:
                 return self._transition_to_remote_audit(task)
             case TaskState.REMOTE_AUDIT:
                 return self._transition_to_done(task)
-            case TaskState.HEALING:
-                return self._transition_to_executing(task)
             case TaskState.DONE:
                 return TaskState.DONE
+
+    def _check_environment_health(self) -> bool:
+        """
+        Check if environment satisfies requirements.
+        Simplified: Check for 'requirements.txt' and verify packages.
+        """
+        req_file = Path(self.project_root) / 'requirements.txt'
+        if not req_file.exists():
+            return True # No requirements, assume healthy
+            
+        # Parse requirements (Simple implementation)
+        try:
+            with open(req_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        pkg = line.split('==')[0].split('>=')[0].strip()
+                        if not self.env_scanner.check_dependency(pkg):
+                            print(f"⚠️ Health Check Failed: Missing {pkg}")
+                            return False
+            return True
+        except Exception as e:
+            print(f"⚠️ Error checking health: {e}")
+            return True # Fail open?
+
+    def _attempt_healing(self) -> bool:
+        """
+        Attempt to heal the environment using EnvScanner.
+        """
+        print("⚕️ Initiating Autonomous Healing Protocol...")
+        req_file = Path(self.project_root) / 'requirements.txt'
+        if not req_file.exists():
+            return True
+            
+        fixed_all = True
+        try:
+            with open(req_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        pkg = line.split('==')[0].split('>=')[0].strip()
+                        if not self.env_scanner.check_dependency(pkg):
+                            print(f"   Requesting fix for: {pkg}")
+                            success = self.env_scanner.request_fix(pkg)
+                            if not success:
+                                fixed_all = False
+        except Exception:
+            return False
+            
+        return fixed_all
     
     def _transition_to_strategy_review(self, task: AtomicTask) -> TaskState:
         """Transition: PENDING → STRATEGY_REVIEW"""
@@ -272,6 +349,7 @@ class MissionOrchestrator:
         """Transition: STRATEGY_REVIEW/HEALING → EXECUTING"""
         old_state = task.state.value
         task.state = TaskState.EXECUTING
+        task.started_at = datetime.now() # Reset timer
         self._log_transition(task, old_state, 'EXECUTING')
         return task.state
     
@@ -347,3 +425,36 @@ class MissionOrchestrator:
         self.tasks = [AtomicTask.from_dict(task_data) for task_data in state['tasks']]
         self.execution_history = state['execution_history']
         self.build_dependency_graph()
+
+    def pre_edit_audit(self, file_path: str) -> bool:
+        """
+        Iron Gate Protocol: Audit-Before-Edit.
+        Verifies file exists and can be parsed before modification.
+        
+        Args:
+            file_path: Target file path
+            
+        Returns:
+            True if safe to edit, False otherwise.
+        """
+        path = Path(file_path)
+        if not path.exists():
+            return True # New file creation is allowed
+            
+        print(f"🛡️ Iron Gate: Auditing '{path.name}' before edit...")
+        try:
+            # Step A: Safe Read
+            content = path.read_text(encoding='utf-8')
+            
+            # Step B: AST Extraction (Symbol Table Check)
+            import ast
+            tree = ast.parse(content)
+            
+            # Verify we can extract symbols (Basic integrity)
+            symbols = [node.name for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.ClassDef))]
+            print(f"   ✅ AST Parsed. Symbols: {len(symbols)}")
+            return True
+        except Exception as e:
+            print(f"🛑 Iron Gate: Audit FAILED for '{path.name}'")
+            print(f"   Reason: {e}")
+            return False

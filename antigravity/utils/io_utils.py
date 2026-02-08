@@ -12,6 +12,16 @@ import logging
 
 logger = logging.getLogger("antigravity.io")
 
+def safe_content_for_protobuf(content: str) -> str:
+    """
+    Force clean string for Protobuf compatibility.
+    Removes/Replaces Lone Surrogates which cause Protobuf crashes.
+    """
+    try:
+        return content.encode('utf-8', 'replace').decode('utf-8')
+    except Exception:
+        return ""
+
 def safe_read(file_path: Union[str, Path]) -> str:
     """
     Safely read a file with strict UTF-8 enforcement and Protobuf compatibility.
@@ -43,6 +53,13 @@ def safe_read(file_path: Union[str, Path]) -> str:
                 with open(path, 'r', encoding='utf-8', errors='replace') as f:
                     content = f.read(100 * 1024) # 100KB
                 return content + "\n[...TRUNCATED DUE TO SIZE]"
+                # Read as bytes first to handle potential encoding issues during truncation
+                with open(path, 'rb') as f:
+                    data = f.read(100 * 1024) # 100KB
+                
+                # Decode with replacement, then apply protobuf safety
+                content = data.decode('utf-8', errors='replace')
+                return safe_content_for_protobuf(content) + "\n[...TRUNCATED DUE TO SIZE]"
             except Exception:
                 return "[BINARY_FILE_SKIPPED]"
     except OSError:
@@ -55,15 +72,18 @@ def safe_read(file_path: Union[str, Path]) -> str:
         # 4. Fallback to replace
         try:
             logger.warning(f"Non-standard encoding detected in {path.name}, auto-sanitized for stability.")
-            with open(path, 'r', encoding='utf-8', errors='replace') as f:
-                content = f.read()
-                
-            # 5. Protobuf Safety Net
-            # Re-encode to strictly compliant UTF-8 to catch any edge cases
-            # capable of crashing C++ protobuf implementation
-            return content.encode('utf-8', 'replace').decode('utf-8')
+            with open(path, 'rb') as f:
+                data = f.read()
+
+            # Decode with replacement to handle non-UTF-8 bytes
+            content = data.decode('utf-8', errors='replace')
+            
+            # Final Protobuf Safety Net (Lone Surrogates)
+            return safe_content_for_protobuf(content)
             
         except Exception:
             return "[BINARY_FILE_SKIPPED]"
     except Exception:
         return "[FILE_READ_ERROR]"
+
+# TAMPERED

@@ -413,35 +413,141 @@ class DeliveryGate:
         Calculate SHA256 hash of all source files
         
         Phase 21 Enhancement: Project-wide hash for integrity
+        v1.1.0 Enhancement: Multi-threaded Speed-up
         """
         import hashlib
-        hasher = hashlib.sha256()
+        import os
+        import concurrent.futures
+
         project_files = sorted(self.project_root.glob('**/*.py'))
-        for file in project_files:
-            if '__pycache__' not in str(file):
+        valid_files = [f for f in project_files if '__pycache__' not in str(f)]
+        file_count = len(valid_files)
+        
+        hasher = hashlib.sha256()
+        
+        if file_count < 500:
+            for file in valid_files:
                 hasher.update(file.read_bytes())
+        else:
+            # Parallel read? Updating single hasher must be sequential or lock-protected.
+            # Reading files in parallel is fast, updating hasher is fast.
+            # But we must update in DETERMINISTIC ORDER.
+            max_workers = max(1, int((os.cpu_count() or 1) * 0.6))
+            
+            def _read_content(f_path):
+                return f_path.read_bytes()
+                
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # Retrieve content in order
+                for content in executor.map(_read_content, valid_files):
+                    hasher.update(content)
+                    
         return hasher.hexdigest()
 
-    def _calculate_merkle_root(self) -> str:
+    def _calculate_merkle_root(self, force_refresh: bool = False) -> str:
         """
         Calculate Merkle root of source code tree
         
         Phase 21 Enhancement: Tamper-proof delivery
-        Ensures any code change after sign-off invalidates the signature
+        v1.1.0 Enhancement: Multi-threaded Hashing (Adaptive Batching + os.walk + Incremental Cache)
+        
+        Args:
+            force_refresh: If True, ignore cache and recompute all hashes.
         
         Returns:
             Merkle root hash
         """
         import hashlib
-        project_files = sorted(self.project_root.glob('**/*.py'))
-        file_hashes = []
-        for file in project_files:
-            if '__pycache__' not in str(file):
-                file_hash = hashlib.sha256(file.read_bytes()).hexdigest()
-                file_hashes.append(file_hash)
-        if not file_hashes:
+        import os
+        import json
+        import concurrent.futures
+        from pathlib import Path
+        
+        # Load Cache (if not forced refresh)
+        cache_file = self.project_root / '.antigravity_hash_cache.json'
+        hash_cache = {}
+        if not force_refresh and cache_file.exists():
+            try:
+                with open(cache_file, 'r', encoding='utf-8') as f:
+                    hash_cache = json.load(f)
+            except Exception:
+                pass # Corrupt cache, recompute
+
+        # Optimize scanning: os.walk is faster than pathlib.glob
+        valid_files = []
+        root_str = str(self.project_root)
+        for root, dirs, files in os.walk(root_str):
+            if '__pycache__' in root:
+                continue
+            dirs[:] = [d for d in dirs if d != '__pycache__']
+            
+            for file in files:
+                if file.endswith('.py'):
+                    valid_files.append(os.path.join(root, file))
+        
+        valid_files.sort()
+        file_count = len(valid_files)
+        
+        # Identify files needing re-hash
+        files_to_hash = []
+        file_hashes_map = {} # path -> hash
+        
+        for f_path_str in valid_files:
+            try:
+                stat = os.stat(f_path_str)
+                # Key: path + mtime + size
+                cache_key = f"{f_path_str}|{stat.st_mtime}|{stat.st_size}"
+                if cache_key in hash_cache:
+                    file_hashes_map[f_path_str] = hash_cache[cache_key]
+                else:
+                    files_to_hash.append(f_path_str)
+            except OSError:
+                continue # File might have vanished
+
+        # Hash new/modified files
+        if files_to_hash:
+            if len(files_to_hash) < 100: # Lower threshold for incremental updates
+                # Single-threaded
+                for f_path in files_to_hash:
+                    with open(f_path, 'rb') as f:
+                        h = hashlib.sha256(f.read()).hexdigest()
+                        file_hashes_map[f_path] = h
+                        # Update cache (using stat from loop above would differ slightly, assume mostly atomic)
+                        stat = os.stat(f_path)
+                        cache_key = f"{f_path}|{stat.st_mtime}|{stat.st_size}"
+                        hash_cache[cache_key] = h
+            else:
+                # Multi-threaded
+                max_workers = max(1, int((os.cpu_count() or 1) * 0.6))
+                
+                def _hash_and_return(f_path_str):
+                    with open(f_path_str, 'rb') as f:
+                        h = hashlib.sha256(f.read()).hexdigest()
+                    stat = os.stat(f_path_str)
+                    k = f"{f_path_str}|{stat.st_mtime}|{stat.st_size}"
+                    return f_path_str, h, k
+                
+                with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    for f_path, h, k in executor.map(_hash_and_return, files_to_hash):
+                        file_hashes_map[f_path] = h
+                        hash_cache[k] = h
+        
+        # Save cache
+        try:
+            with open(cache_file, 'w', encoding='utf-8') as f:
+                json.dump(hash_cache, f, indent=0)
+        except Exception:
+            pass
+
+        # Collect hashes in sorted order
+        final_hashes = []
+        for f_path in valid_files:
+            if f_path in file_hashes_map:
+                final_hashes.append(file_hashes_map[f_path])
+                
+        if not final_hashes:
             return hashlib.sha256(b'empty').hexdigest()
-        combined = ''.join(file_hashes)
+        combined = ''.join(final_hashes)
         merkle_root = hashlib.sha256(combined.encode()).hexdigest()
         return merkle_root
 

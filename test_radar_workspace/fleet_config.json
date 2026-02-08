@@ -1,0 +1,25 @@
+{
+  "projects": {
+    "security_core": {
+      "project_id": "security_core",
+      "path": "d:\\\u684c\u9762\\AGENT\\test_radar_workspace\\projects\\security_core",
+      "name": "security_core",
+      "status": "ACTIVE",
+      "last_active": "2026-02-08T11:14:13.941819",
+      "merkle_root": null,
+      "vibe_score": 0,
+      "workspace_root": null
+    },
+    "banking_app": {
+      "project_id": "banking_app",
+      "path": "d:\\\u684c\u9762\\AGENT\\test_radar_workspace\\projects\\banking_app",
+      "name": "banking_app",
+      "status": "ACTIVE",
+      "last_active": "2026-02-08T11:14:13.943184",
+      "merkle_root": null,
+      "vibe_score": 0,
+      "workspace_root": null
+    }
+  },
+  "last_active": null
+}

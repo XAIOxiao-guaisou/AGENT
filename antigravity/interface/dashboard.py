@@ -50,61 +50,116 @@ if st.sidebar.button(t('check_deps')):
         else:
             st.sidebar.success(t('all_deps_ok'))
 st.sidebar.markdown('---')
-st.sidebar.subheader('🎯 ' + t('project_center'))
-from pathlib import Path
-from antigravity.infrastructure.p3_state_manager import P3StateManager
-projects_dir = Path(CONFIG.get('PROJECTS_DIR', 'projects'))
-available_projects = []
-project_status = {}
-if projects_dir.exists():
-    for project_path in projects_dir.iterdir():
-        if project_path.is_dir():
-            project_name = project_path.name
-            has_plan = (project_path / 'PLAN.md').exists()
-            has_state = (project_path / '.antigravity_state.json').exists()
-            if has_plan and has_state:
-                status = '🟢'
-            elif has_plan:
-                status = '🟡'
-            else:
-                status = '🔴'
-            available_projects.append(project_name)
-            project_status[project_name] = status
-project_options = ['Global (Legacy)'] + available_projects
+st.sidebar.subheader('🚢 ' + t('project_center'))
+
+# Phase 11: Fleet Commander Integration
+from antigravity.core.fleet_manager import ProjectFleetManager
+fleet_mgr = ProjectFleetManager.get_instance()
+
+# 1. Scan Workspace (Heartbeat)
+# In a real app, we might scan on startup or explicit refresh. 
+# Here we scan periodically to discover new projects.
+fleet_mgr.scan_workspace(CONFIG.get('PROJECTS_DIR', 'projects'))
+
+# 2. Get Fleet Status
+fleet_status = fleet_mgr.get_fleet_status()
+project_options = ['Global (Legacy)'] + [p['project_id'] for p in fleet_status]
+project_map = {p['project_id']: p for p in fleet_status}
+
 formatted_options = []
 for opt in project_options:
     if opt == 'Global (Legacy)':
         formatted_options.append('🌐 Global (Legacy)')
     else:
-        status_icon = project_status.get(opt, '⚪')
-        formatted_options.append(f'{status_icon} {opt}')
-selected_index = st.sidebar.selectbox(t('active_project'), range(len(formatted_options)), format_func=lambda i: formatted_options[i], key='p3_project_selector')
-selected_project = project_options[selected_index]
-if 'last_selected_project' not in st.session_state:
-    st.session_state.last_selected_project = None
-if selected_project != st.session_state.last_selected_project:
-    st.session_state.last_selected_project = selected_project
-    with st.sidebar:
-        with st.spinner(t('loading_project_context')):
-            if selected_project != 'Global (Legacy)':
-                project_root = projects_dir / selected_project
-                st.session_state.active_project_root = project_root
-                try:
-                    st.session_state.active_state_mgr = P3StateManager(project_root)
-                    try:
-                        from antigravity.infrastructure.performance_monitor import PerformanceMonitor
-                        st.session_state.active_perf_monitor = PerformanceMonitor(str(project_root))
-                    except:
-                        st.session_state.active_perf_monitor = None
-                    st.sidebar.success(f"✅ {t('project_loaded')}: {selected_project}")
-                except Exception as e:
-                    st.sidebar.error(f"⚠️ {t('project_load_failed')}: {e}")
-                    st.session_state.active_project_root = Path('.')
-                    st.session_state.active_state_mgr = None
-            else:
-                st.session_state.active_project_root = Path('.')
-                st.session_state.active_state_mgr = state_mgr
-                st.session_state.active_perf_monitor = None
+        # Fleet Integrity Indicators
+        p_meta = project_map.get(opt, {})
+        status = p_meta.get('status', 'ACTIVE')
+        
+        # Visual Mapping
+        icon = '⚪'
+        if status == 'CERTIFIED': icon = '🟢'
+        elif status == 'TAMPERED': icon = '🔴'
+        elif status == 'ACTIVE': icon = '🟡'
+        elif status == 'PAUSED': icon = '⏸️'
+        
+        formatted_options.append(f'{icon} {opt}')
+
+# 2.5 Fleet Integrity Check (Active Project)
+current_active = fleet_mgr.active_project_id
+if current_active and current_active != 'Global (Legacy)':
+    integrity_data = fleet_mgr.verify_fleet_integrity(current_active)
+    fleet_status_code = integrity_data.get('status', 'ACTIVE')
+    
+    if fleet_status_code == 'CONTAMINATED':
+        st.sidebar.error(f"☣️ FLEET POLLUTION DETECTED!", icon="☣️")
+        with st.sidebar.expander("📡 Dependency Radar (ALERT)", expanded=True):
+            st.markdown(f"**Status**: {fleet_status_code}")
+            st.markdown("**Violations**:")
+            for v in integrity_data.get('violations', []):
+                st.markdown(f"- 🔴 {v}")
+            st.markdown("---")
+            st.markdown(f"**Dependencies**: {len(integrity_data.get('dependencies', []))}")
+            for d in integrity_data.get('dependencies', []):
+                 st.code(d)
+    elif fleet_status_code == 'TAMPERED':
+        st.sidebar.error(f"🔴 SECURITY BREACH DETECTED!", icon="🔴")
+    elif integrity_data.get('dependencies'):
+        with st.sidebar.expander(f"📡 Dependency Radar ({len(integrity_data['dependencies'])})"):
+             for d in integrity_data['dependencies']:
+                 st.code(d)
+current_active_id = fleet_mgr.active_project_id
+default_index = 0
+if current_active_id and current_active_id in project_options:
+    default_index = project_options.index(current_active_id)
+
+selected_index = st.sidebar.selectbox(
+    t('active_project'), 
+    range(len(formatted_options)), 
+    format_func=lambda i: formatted_options[i], 
+    index=default_index,
+    key='fleet_project_selector'
+)
+selected_project_id = project_options[selected_index]
+
+# 4. Atomic Switch Trigger
+if selected_project_id != 'Global (Legacy)':
+    # Check if we need to switch
+    if selected_project_id != fleet_mgr.active_project_id:
+        success = fleet_mgr.switch_project(selected_project_id)
+        if success:
+            st.toast(f"🚢 Fleet: Switched to {selected_project_id}", icon="✅")
+            # Telemetry Flush handled by switch_project
+            # Rerun to refresh UI context
+            time.sleep(0.5) # Let visual toast linger
+            st.rerun()
+            
+    # Load Context for Dashboard Views
+    p_meta = project_map[selected_project_id]
+    project_root = Path(p_meta['path'])
+    st.session_state.active_project_root = project_root
+    
+    # Initialize/Get Managers
+    try:
+        if 'active_state_mgr' not in st.session_state or st.session_state.active_project_root != project_root:
+             st.session_state.active_state_mgr = P3StateManager(project_root)
+        
+        # Performance Monitor
+        try:
+            from antigravity.infrastructure.performance_monitor import PerformanceMonitor
+            st.session_state.active_perf_monitor = PerformanceMonitor(str(project_root))
+        except:
+            st.session_state.active_perf_monitor = None
+            
+    except Exception as e:
+        st.sidebar.error(f"⚠️ {t('project_load_failed')}: {e}")
+        st.session_state.active_project_root = Path('.')
+        
+else:
+    # Legacy Global Mode
+    st.session_state.active_project_root = Path('.')
+    st.session_state.active_state_mgr = state_mgr
+    st.session_state.active_perf_monitor = None
+
 if selected_project != 'Global (Legacy)':
     project_root = projects_dir / selected_project
     with st.sidebar.expander(f"📋 {t('project_info')}"):
@@ -556,6 +611,184 @@ except Exception as e:
     import traceback
     with st.expander('查看详细错误'):
         st.code(traceback.format_exc())
+st.markdown('---')
+st.header('🧠 Neural Nexus - 舰队神经枢纽')
+st.caption('Global Knowledge Graph & Semantic Topology')
+
+try:
+    from antigravity.core.knowledge_graph import FleetKnowledgeGraph
+    kg = FleetKnowledgeGraph.get_instance()
+    
+    # Auto-scan if empty
+    if not kg.knowledge.get('projects'):
+        from antigravity.core.fleet_manager import ProjectFleetManager
+        fm = ProjectFleetManager.get_instance()
+        kg.scan_fleet_wisdom(fm.get_fleet_status())
+        
+    # Stats
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Nodes", len(kg.knowledge.get('projects', {})))
+    
+    # Graph Visualization
+    import graphviz
+    graph = graphviz.Digraph()
+    graph.attr(rankdir='LR', bgcolor='transparent')
+    
+    # Nodes
+    for pid, data in kg.knowledge.get('projects', {}).items():
+        label = f"{pid}\n({len(data.get('exports', []))} exports)"
+        graph.node(pid, label, shape='box', style='filled', fillcolor='#2b2b2b', fontcolor='white', color='#00d2ff')
+        
+    # Edges (Dependencies)
+    # We retrieve dependencies from FleetManager
+    from antigravity.core.fleet_manager import ProjectFleetManager
+    fm = ProjectFleetManager.get_instance()
+    
+    edge_count = 0
+    for pid in kg.knowledge.get('projects', {}):
+        deps = fm.scan_cross_dependencies(pid)
+        for dep in deps:
+            graph.edge(pid, dep, color='#ff0055', style='dashed') # Red for dependencies (Pulse Lines)
+            edge_count += 1
+            
+    with col2:
+        st.metric("Active Synapses", edge_count)
+        
+    st.graphviz_chart(graph)
+    
+    with st.expander("🔍 Semantic Index (Exports)"):
+        for pid, data in kg.knowledge.get('projects', {}).items():
+            st.markdown(f"**{pid}**")
+            for exp in data.get('exports', []):
+                st.code(f"{exp['type']} {exp['name']} ({exp['file']})\n# {exp['docstring']}", language='python')
+
+except Exception as e:
+    st.error(f"Neural Nexus Offline: {e}")
+
+st.markdown('---')
+st.header('🧠 Neural Nexus - 舰队神经枢纽')
+st.caption('Global Knowledge Graph & Semantic Topology')
+
+try:
+    from antigravity.core.knowledge_graph import FleetKnowledgeGraph
+    kg = FleetKnowledgeGraph.get_instance()
+    
+    # Auto-scan if empty
+    if not kg.knowledge.get('projects'):
+        from antigravity.core.fleet_manager import ProjectFleetManager
+        fm = ProjectFleetManager.get_instance()
+        kg.scan_fleet_wisdom(fm.get_fleet_status())
+        
+    # Stats
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Nodes", len(kg.knowledge.get('projects', {})))
+    
+    # Graph Visualization
+    import graphviz
+    graph = graphviz.Digraph()
+    graph.attr(rankdir='LR', bgcolor='transparent')
+    
+    # Nodes
+    for pid, data in kg.knowledge.get('projects', {}).items():
+        label = f"{pid}\n({len(data.get('exports', []))} exports)"
+        graph.node(pid, label, shape='box', style='filled', fillcolor='#2b2b2b', fontcolor='white', color='#00d2ff')
+        
+    # Edges (Dependencies)
+    # Edges (Dependencies)
+    # We retrieve dependencies from GKG Relations (Phase 14: Pulse Strength)
+    edge_count = 0
+    relationships = kg.knowledge.get('relationships', [])
+    
+    # Fallback to FM scan if GKG relations empty (backward compatibility)
+    if not relationships:
+        from antigravity.core.fleet_manager import ProjectFleetManager
+        fm = ProjectFleetManager.get_instance()
+        for pid in kg.knowledge.get('projects', {}):
+            deps = fm.scan_cross_dependencies(pid)
+            for dep in deps:
+                graph.edge(pid, dep, color='#ff0055', style='dashed')
+                edge_count += 1
+    else:
+        for rel in relationships:
+            src = rel.get('source')
+            tgt = rel.get('target')
+            strength = rel.get('strength', 1)
+            # Pulse Visual: Thicker lines for stronger bonds
+            width = str(max(1, strength / 2))
+            graph.edge(src, tgt, color='#ff0055', style='dashed', penwidth=width)
+            edge_count += 1
+            
+    with col2:
+        st.metric("Active Synapses", edge_count)
+        
+    st.graphviz_chart(graph)
+    
+    with st.expander("🔍 Semantic Index (Exports)"):
+        for pid, data in kg.knowledge.get('projects', {}).items():
+            st.markdown(f"**{pid}**")
+            for exp in data.get('exports', []):
+                st.code(f"{exp['type']} {exp['name']} ({exp['file']})\n# {exp['docstring']}", language='python')
+
+except Exception as e:
+    st.error(f"Neural Nexus Offline: {e}")
+
+st.markdown('---')
+st.header('🧠 Neural Nexus - 舰队神经枢纽')
+st.caption('Global Knowledge Graph & Semantic Topology')
+
+try:
+    from antigravity.core.knowledge_graph import FleetKnowledgeGraph
+    kg = FleetKnowledgeGraph.get_instance()
+    
+    # Auto-scan if empty
+    if not kg.knowledge.get('projects'):
+        from antigravity.core.fleet_manager import ProjectFleetManager
+        fm = ProjectFleetManager.get_instance()
+        kg.scan_fleet_wisdom(fm.get_fleet_status())
+        
+    # Stats
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Nodes", len(kg.knowledge.get('projects', {})))
+    
+    # Graph Visualization
+    import graphviz
+    graph = graphviz.Digraph()
+    graph.attr(rankdir='LR', bgcolor='transparent')
+    
+    # Nodes
+    for pid, data in kg.knowledge.get('projects', {}).items():
+        label = f"{pid}\n({len(data.get('exports', []))} exports)"
+        graph.node(pid, label, shape='box', style='filled', fillcolor='#2b2b2b', fontcolor='white', color='#00d2ff')
+        
+    # Edges (Dependencies)
+    # We retrieve dependencies from FleetManager
+    from antigravity.core.fleet_manager import ProjectFleetManager
+    fm = ProjectFleetManager.get_instance()
+    
+    edge_count = 0
+    for pid in kg.knowledge.get('projects', {}):
+        deps = fm.scan_cross_dependencies(pid)
+        for dep in deps:
+            graph.edge(pid, dep, color='#ff0055', style='dashed') # Red for dependencies (Pulse Lines)
+            edge_count += 1
+            
+    with col2:
+        st.metric("Active Synapses", edge_count)
+        
+    st.graphviz_chart(graph)
+    
+    with st.expander("🔍 Semantic Index (Exports)"):
+        for pid, data in kg.knowledge.get('projects', {}).items():
+            st.markdown(f"**{pid}**")
+            for exp in data.get('exports', []):
+                st.code(f"{exp['type']} {exp['name']} ({exp['file']})\n# {exp['docstring']}", language='python')
+
+except Exception as e:
+    st.error(f"Neural Nexus Offline: {e}")
+
 st.markdown('---')
 st.caption(t('powered_by'))
 if DEBUG_MONITOR_ENABLED:

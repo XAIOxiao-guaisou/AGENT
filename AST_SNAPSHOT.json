@@ -1,0 +1,431 @@
+{
+  "timestamp": "2026-02-08T12:18:37.939894",
+  "files": [
+    {
+      "path": "antigravity\\__init__.py",
+      "mtime": 1770465555.5205574,
+      "line_count": 79,
+      "ast_hash": "61bf959a4a5f5d2b"
+    },
+    {
+      "path": "antigravity\\core\\autonomous_auditor.py",
+      "mtime": 1770464282.3642268,
+      "line_count": 337,
+      "ast_hash": "d59c146a9ae3ca8f"
+    },
+    {
+      "path": "antigravity\\core\\fleet_manager.py",
+      "mtime": 1770522829.2287445,
+      "line_count": 347,
+      "ast_hash": "5b490f9bde2af8d8"
+    },
+    {
+      "path": "antigravity\\core\\fleet_module_loader.py",
+      "mtime": 1770521805.8236556,
+      "line_count": 108,
+      "ast_hash": "fc0f9ca12c72bc13"
+    },
+    {
+      "path": "antigravity\\core\\fleet_refactor_manager.py",
+      "mtime": 1770522346.8204656,
+      "line_count": 112,
+      "ast_hash": "e688c4a46d74f1e0"
+    },
+    {
+      "path": "antigravity\\core\\knowledge_graph.py",
+      "mtime": 1770522392.0324824,
+      "line_count": 220,
+      "ast_hash": "7309ee6630fc1453"
+    },
+    {
+      "path": "antigravity\\core\\local_reasoning.py",
+      "mtime": 1770383186.7763543,
+      "line_count": 392,
+      "ast_hash": "b9cbcfc67603cc11"
+    },
+    {
+      "path": "antigravity\\core\\mission_orchestrator.py",
+      "mtime": 1770522691.6198883,
+      "line_count": 460,
+      "ast_hash": "d369d1686ef3ca74"
+    },
+    {
+      "path": "antigravity\\core\\semantic_index.py",
+      "mtime": 1770522310.9815776,
+      "line_count": 164,
+      "ast_hash": "6ef1826af39da8e1"
+    },
+    {
+      "path": "antigravity\\core\\__init__.py",
+      "mtime": 1770463556.5089235,
+      "line_count": 1,
+      "ast_hash": "28c26a296ea848a6"
+    },
+    {
+      "path": "antigravity\\infrastructure\\audit_history.py",
+      "mtime": 1770464665.615913,
+      "line_count": 273,
+      "ast_hash": "934ab757ee43e98c"
+    },
+    {
+      "path": "antigravity\\infrastructure\\change_detector.py",
+      "mtime": 1770466035.5443969,
+      "line_count": 311,
+      "ast_hash": "418917a4dbf223c7"
+    },
+    {
+      "path": "antigravity\\infrastructure\\delivery_gate.py",
+      "mtime": 1770469285.325871,
+      "line_count": 629,
+      "ast_hash": "23c8d45cd8bde619"
+    },
+    {
+      "path": "antigravity\\infrastructure\\env_scanner.py",
+      "mtime": 1770468360.8542902,
+      "line_count": 113,
+      "ast_hash": "3592356ddfa2efbb"
+    },
+    {
+      "path": "antigravity\\infrastructure\\file_lock_manager.py",
+      "mtime": 1770432331.599498,
+      "line_count": 294,
+      "ast_hash": "248946bff8ee7800"
+    },
+    {
+      "path": "antigravity\\infrastructure\\monitor.py",
+      "mtime": 1770465131.6389704,
+      "line_count": 299,
+      "ast_hash": "ff020fa9987b46a3"
+    },
+    {
+      "path": "antigravity\\infrastructure\\notifier.py",
+      "mtime": 1770272388.7976563,
+      "line_count": 28,
+      "ast_hash": "9124bfc0538ce572"
+    },
+    {
+      "path": "antigravity\\infrastructure\\p3_state_manager.py",
+      "mtime": 1770371526.565768,
+      "line_count": 241,
+      "ast_hash": "80381751086d2fc6"
+    },
+    {
+      "path": "antigravity\\infrastructure\\performance_monitor.py",
+      "mtime": 1770376375.4913654,
+      "line_count": 356,
+      "ast_hash": "94899d41d3379bcd"
+    },
+    {
+      "path": "antigravity\\infrastructure\\state_manager.py",
+      "mtime": 1770347250.2125187,
+      "line_count": 219,
+      "ast_hash": "badae76aca8cf32c"
+    },
+    {
+      "path": "antigravity\\infrastructure\\telemetry_queue.py",
+      "mtime": 1770519225.2212234,
+      "line_count": 521,
+      "ast_hash": "e2d31cc746412c8a"
+    },
+    {
+      "path": "antigravity\\infrastructure\\test_runner.py",
+      "mtime": 1770465281.5096972,
+      "line_count": 110,
+      "ast_hash": "39796684f0b72b6d"
+    },
+    {
+      "path": "antigravity\\infrastructure\\__init__.py",
+      "mtime": 1770463556.5105538,
+      "line_count": 1,
+      "ast_hash": "ab0fb59d554b08e7"
+    },
+    {
+      "path": "antigravity\\interface\\cyberpunk_hud.py",
+      "mtime": 1770464282.4446704,
+      "line_count": 369,
+      "ast_hash": "aedeed2740ca5cb3"
+    },
+    {
+      "path": "antigravity\\interface\\dashboard.py",
+      "mtime": 1770522501.6923437,
+      "line_count": 799,
+      "ast_hash": "54cae2aacc966f4b"
+    },
+    {
+      "path": "antigravity\\interface\\p3_performance_monitor_ui.py",
+      "mtime": 1770464282.4685898,
+      "line_count": 70,
+      "ast_hash": "7a031bb1ed93ca01"
+    },
+    {
+      "path": "antigravity\\interface\\p3_project_selector.py",
+      "mtime": 1770464282.470591,
+      "line_count": 73,
+      "ast_hash": "9c4c6780778ee512"
+    },
+    {
+      "path": "antigravity\\interface\\p3_translations.py",
+      "mtime": 1770463485.6575372,
+      "line_count": 30,
+      "ast_hash": "8a57f86fa3f80d0f"
+    },
+    {
+      "path": "antigravity\\interface\\__init__.py",
+      "mtime": 1770463556.511082,
+      "line_count": 1,
+      "ast_hash": "7756b276c38db7b6"
+    },
+    {
+      "path": "antigravity\\services\\context_compressor.py",
+      "mtime": 1770466117.5511537,
+      "line_count": 542,
+      "ast_hash": "e9583ee8c47f00d8"
+    },
+    {
+      "path": "antigravity\\services\\context_manager.py",
+      "mtime": 1770365399.4931266,
+      "line_count": 382,
+      "ast_hash": "05878a5ae5a7b499"
+    },
+    {
+      "path": "antigravity\\services\\dependency_analyzer.py",
+      "mtime": 1770365270.240169,
+      "line_count": 355,
+      "ast_hash": "ba3d78667a043fcd"
+    },
+    {
+      "path": "antigravity\\services\\healing_executor.py",
+      "mtime": 1770464282.3860872,
+      "line_count": 238,
+      "ast_hash": "dded322d1652b550"
+    },
+    {
+      "path": "antigravity\\services\\precision_healer.py",
+      "mtime": 1770438215.470338,
+      "line_count": 266,
+      "ast_hash": "3a8754e2e4a75697"
+    },
+    {
+      "path": "antigravity\\services\\quality_tower.py",
+      "mtime": 1770464282.395375,
+      "line_count": 325,
+      "ast_hash": "27dd8a1ebc165d5e"
+    },
+    {
+      "path": "antigravity\\services\\rca_immune_system.py",
+      "mtime": 1770432333.6093867,
+      "line_count": 745,
+      "ast_hash": "e90c72fb44fe682c"
+    },
+    {
+      "path": "antigravity\\services\\shadow_validator.py",
+      "mtime": 1770464282.404754,
+      "line_count": 188,
+      "ast_hash": "0dd24e13f59f4e86"
+    },
+    {
+      "path": "antigravity\\services\\sheriff_strategist.py",
+      "mtime": 1770450808.4680712,
+      "line_count": 437,
+      "ast_hash": "1046634ec182042e"
+    },
+    {
+      "path": "antigravity\\services\\strategist_protocol.py",
+      "mtime": 1770438265.7539196,
+      "line_count": 286,
+      "ast_hash": "c58567947922b70c"
+    },
+    {
+      "path": "antigravity\\services\\__init__.py",
+      "mtime": 1770463556.5094905,
+      "line_count": 1,
+      "ast_hash": "eec884b168e44387"
+    },
+    {
+      "path": "antigravity\\utils\\config.py",
+      "mtime": 1770347596.0896735,
+      "line_count": 81,
+      "ast_hash": "a2a5d0c2b02c8582"
+    },
+    {
+      "path": "antigravity\\utils\\doc_generator.py",
+      "mtime": 1770372782.9672742,
+      "line_count": 283,
+      "ast_hash": "9d90b42f9ee6c187"
+    },
+    {
+      "path": "antigravity\\utils\\env_checker.py",
+      "mtime": 1770287355.9396336,
+      "line_count": 56,
+      "ast_hash": "8a74e9af34fa77b6"
+    },
+    {
+      "path": "antigravity\\utils\\io_utils.py",
+      "mtime": 1770518051.5406318,
+      "line_count": 89,
+      "ast_hash": "7d2f7089a2ce92cb"
+    },
+    {
+      "path": "antigravity\\utils\\p3_root_detector.py",
+      "mtime": 1770371528.669076,
+      "line_count": 71,
+      "ast_hash": "be1b3ee41ca2b368"
+    },
+    {
+      "path": "antigravity\\utils\\p3_scaffolding_code.py",
+      "mtime": 1770464282.47675,
+      "line_count": 80,
+      "ast_hash": "cefad124d9519709"
+    },
+    {
+      "path": "antigravity\\utils\\utils.py",
+      "mtime": 1770265961.9879029,
+      "line_count": 62,
+      "ast_hash": "b292ae10b05e0593"
+    },
+    {
+      "path": "antigravity\\utils\\vibe_check.py",
+      "mtime": 1770465206.3641624,
+      "line_count": 325,
+      "ast_hash": "0e4acf49b182697d"
+    },
+    {
+      "path": "antigravity\\utils\\__init__.py",
+      "mtime": 1770466007.6330864,
+      "line_count": 3,
+      "ast_hash": "a6875ae3893db0c6"
+    },
+    {
+      "path": "antigravity\\infrastructure\\debug_monitor\\alert_manager.py",
+      "mtime": 1770379850.9645803,
+      "line_count": 129,
+      "ast_hash": "0862f5b6751ca319"
+    },
+    {
+      "path": "antigravity\\infrastructure\\debug_monitor\\error_tracker.py",
+      "mtime": 1770379848.8761773,
+      "line_count": 327,
+      "ast_hash": "cfc916dbaf8b2cf3"
+    },
+    {
+      "path": "antigravity\\infrastructure\\debug_monitor\\storage.py",
+      "mtime": 1770379787.8213387,
+      "line_count": 198,
+      "ast_hash": "6f064b8ab4e24730"
+    },
+    {
+      "path": "antigravity\\infrastructure\\debug_monitor\\ui_components.py",
+      "mtime": 1770381418.22847,
+      "line_count": 316,
+      "ast_hash": "4e546fba03f20990"
+    },
+    {
+      "path": "antigravity\\infrastructure\\debug_monitor\\__init__.py",
+      "mtime": 1770379951.6957998,
+      "line_count": 62,
+      "ast_hash": "6c1ccb186fa11574"
+    },
+    {
+      "path": "projects\\Sheriff_Brain_Upgrade\\autonomous_auditor.py",
+      "mtime": 1770463485.660539,
+      "line_count": 785,
+      "ast_hash": "18990cf76ba23b6b"
+    },
+    {
+      "path": "projects\\Sheriff_Brain_Upgrade\\autonomous_auditor_additional_methods.py",
+      "mtime": 1770463524.5256333,
+      "line_count": 137,
+      "ast_hash": "PARSE_ERROR"
+    },
+    {
+      "path": "projects\\Sheriff_Brain_Upgrade\\autonomous_auditor_final_methods.py",
+      "mtime": 1770463546.3163228,
+      "line_count": 92,
+      "ast_hash": "PARSE_ERROR"
+    },
+    {
+      "path": "projects\\Sheriff_Brain_Upgrade\\local_reasoning.py",
+      "mtime": 1770463485.6625392,
+      "line_count": 436,
+      "ast_hash": "1f41ed1adeebf3b9"
+    },
+    {
+      "path": "projects\\Sheriff_Brain_Upgrade\\mission_orchestrator.py",
+      "mtime": 1770463485.6625392,
+      "line_count": 497,
+      "ast_hash": "eb7aa4f548ac66f6"
+    },
+    {
+      "path": "projects\\Sheriff_Brain_Upgrade\\mission_orchestrator_serialization.py",
+      "mtime": 1770463534.9585617,
+      "line_count": 181,
+      "ast_hash": "PARSE_ERROR"
+    },
+    {
+      "path": "projects\\Sheriff_Brain_Upgrade\\rca_immune_system.py",
+      "mtime": 1770463485.6646795,
+      "line_count": 605,
+      "ast_hash": "e4a1de0f0ccf8770"
+    },
+    {
+      "path": "projects\\Sheriff_Brain_Upgrade\\sheriff_strategist.py",
+      "mtime": 1770463600.4510584,
+      "line_count": 557,
+      "ast_hash": "9fe440e4bb8e6775"
+    },
+    {
+      "path": "projects\\\u5c0f\u7ea2\u4e66\u722c\u866b\\main.py",
+      "mtime": 1770460912.4967546,
+      "line_count": 239,
+      "ast_hash": "ed44da3242c76d4c"
+    },
+    {
+      "path": "projects\\\u5c0f\u7ea2\u4e66\u722c\u866b\\core\\__init__.py",
+      "mtime": 1770460859.075831,
+      "line_count": 1,
+      "ast_hash": "ad2e13b69c4fc1fd"
+    },
+    {
+      "path": "projects\\\u5c0f\u7ea2\u4e66\u722c\u866b\\core\\\u5c0f\u7ea2\u4e66\u722c\u866b_core.py",
+      "mtime": 1770460859.075831,
+      "line_count": 24,
+      "ast_hash": "e8a8f06787fabdad"
+    },
+    {
+      "path": "projects\\\u5c0f\u7ea2\u4e66\u722c\u866b\\tests\\test_\u5c0f\u7ea2\u4e66\u722c\u866b_core.py",
+      "mtime": 1770460930.4911041,
+      "line_count": 296,
+      "ast_hash": "0f0a226a86c44360"
+    },
+    {
+      "path": "projects\\\u5c0f\u7ea2\u4e66\u722c\u866b\\tests\\__init__.py",
+      "mtime": 1770460869.1543171,
+      "line_count": 14,
+      "ast_hash": "428f3867decb3155"
+    },
+    {
+      "path": "projects\\\u5c0f\u7ea2\u4e66\u722c\u866b\\utils\\helpers.py",
+      "mtime": 1770460954.5903842,
+      "line_count": 370,
+      "ast_hash": "7d4a1dd42bf3bf5a"
+    },
+    {
+      "path": "projects\\\u5c0f\u7ea2\u4e66\u722c\u866b\\utils\\__init__.py",
+      "mtime": 1770460959.8554313,
+      "line_count": 507,
+      "ast_hash": "785480a9bfa8e4eb"
+    },
+    {
+      "path": "projects\\vortex_scraper\\core\\scraper.py",
+      "mtime": 1770522730.7415855,
+      "line_count": 14,
+      "ast_hash": "690d8bd20fff36d3"
+    },
+    {
+      "path": "projects\\vortex_core\\core\\connection.py",
+      "mtime": 1770522744.0555606,
+      "line_count": 15,
+      "ast_hash": "e5135737ff8307f9"
+    }
+  ]
+}

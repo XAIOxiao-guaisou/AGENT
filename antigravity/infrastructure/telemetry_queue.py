@@ -21,7 +21,7 @@ Phase 21 Enhancements:
 
 import multiprocessing as mp
 from dataclasses import dataclass, asdict
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 from enum import Enum
 import logging
@@ -97,10 +97,28 @@ class TelemetryQueue:
             event_type: Type of telemetry event
             data: Event-specific data
         """
+        # Phase 21 Enhancement: Industrial Hardening (Protobuf Shield)
+        # Deep recursive sanitization of all telemetry data
+        try:
+            from antigravity.utils.io_utils import safe_content_for_protobuf
+            
+            def _sanitize_payload(payload):
+                if isinstance(payload, str):
+                    return safe_content_for_protobuf(payload)
+                elif isinstance(payload, dict):
+                    return {k: _sanitize_payload(v) for k, v in payload.items()}
+                elif isinstance(payload, list):
+                    return [_sanitize_payload(i) for i in payload]
+                return payload
+                
+            sanitized_data = _sanitize_payload(data)
+        except ImportError:
+            sanitized_data = data # Fallback if utils not available (circular import risk)
+
         event = TelemetryEvent(
             event_type=event_type.value,
             timestamp=datetime.now().isoformat(),
-            data=data
+            data=sanitized_data
         )
         
         queue = cls.get_queue()
@@ -274,6 +292,22 @@ class TelemetryQueue:
                 queue.get_nowait()
             except:
                 break
+                
+    @classmethod
+    def flush_queue(cls) -> List[Dict[str, Any]]:
+        """
+        Phase 11 Tuning: Atomic Hot-Swap Support
+        Drain queue and return all pending events.
+        Used by FleetManager during context switch.
+        """
+        queue = cls.get_queue()
+        events = []
+        while not queue.empty():
+            try:
+                events.append(queue.get_nowait())
+            except:
+                break
+        return events
 
 
 class TelemetryBuffer:

@@ -1,22 +1,7 @@
 {
-  "project": "Antigravity",
-  "version": "1.0.1",
-  "status": "APPROVED",
-  "timestamp": "2026-02-07T20:19:19.320481",
-  "chief_reviewer": "CHIEF-REVIEWER-V1-0-1-FINAL-CERTIFIED-20260207",
-  "source_code_merkle_root": "merkle:20ec8d7747fd888d93943bc0efedb16e529c6ca67b28600fa2718097bf207e7f",
-  "project_hash": "sha256:7d0a254c61ec27a4ab477400a80126955a5aa60aa57d6cf4a70d7d2ac9078ef6",
-  "checkpoints": {
-    "checkpoint_1_internal_imports": "PASS",
-    "checkpoint_2_fuzzy_regression": "PASS",
-    "checkpoint_3_i18n_consistency": "PASS",
-    "checkpoint_4_utf8_resilience": "PASS"
-  },
-  "metrics": {
-    "files_scanned": 3810,
-    "imports_found_issues": 0,
-    "i18n_keys_verified": 58,
-    "utf8_hardening": "ACTIVE"
-  },
-  "signature": "CHIEF-REVIEWER-V1-0-1-FINAL-CERTIFIED-20260207"
+  "version": "1.5.0",
+  "status": "PRODUCTION_CERTIFIED",
+  "timestamp": "2026-02-08T12:51:27.361758",
+  "signature": "CHIEF-REVIEWER-V1-5-0-FINAL-LANDING-20260207",
+  "integrity_hash": "3b1b062d3479dd79"
 }

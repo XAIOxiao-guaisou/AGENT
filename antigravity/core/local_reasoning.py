@@ -292,11 +292,40 @@ class LocalReasoningEngine:
             plan['files_to_create'].append('main.py')
         
         # 5. Validate plan
+                # 5. Validate plan
         violations = self.constraint_set.validate_plan(plan)
         if violations:
             plan['warnings'] = violations
         
         return plan
+    
+    @staticmethod
+    def validate_shadow_prediction(task_id: str, prediction: Dict) -> bool:
+        """
+        Phase 16.4: Consensus Engine.
+        Validates a Shadow Kernel prediction against physical reality.
+        
+        Checks:
+        1. Syntax Validity (AST Parse)
+        2. Non-Empty Content
+        3. 'Hallucination' Heuristics (e.g. valid Python)
+        """
+        content = prediction.get('simulated_content', '')
+        if not content:
+            print(f"❌ CONSENSUS VETO: Prediction for {task_id} is empty.")
+            return False
+            
+        try:
+            import ast
+            ast.parse(content)
+            # Future: Check against architectural constraints?
+            return True
+        except SyntaxError as e:
+            print(f"❌ CONSENSUS VETO: Prediction for {task_id} contains invalid syntax: {e}")
+            return False
+        except Exception as e:
+            print(f"❌ CONSENSUS VETO: Prediction validation failed: {e}")
+            return False
     
     def analyze_project_structure(self) -> ProjectState:
         """

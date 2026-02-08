@@ -1,0 +1,20 @@
+Instantiating Orchestrator...
+Orchestrator Type: <class 'antigravity.core.mission_orchestrator.MissionOrchestrator'>
+Orchestrator Dir: ['__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__firstlineno__', '__format__', '__ge__', '__getattribute__', '__getstate__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__static_attributes__', '__str__', '__subclasshook__', '__weakref__', '_attempt_healing', '_check_environment_health', '_extract_components', '_get_task_by_id', '_git_sync', '_handle_context_drift', '_log_transition', '_sync_shadow_prediction', '_transition_to_done', '_transition_to_executing', '_transition_to_remote_audit', '_transition_to_self_check', '_transition_to_strategy_review', 'build_dependency_graph', 'current_task', 'decompose_idea', 'dependency_graph', 'env_scanner', 'execution_history', 'get_execution_summary', 'get_next_task', 'load_state', 'pre_edit_audit', 'project_root', 'save_state', 'shadow_kernel', 'step', 'tasks', 'trigger_healing']
+
+🧪 Chronos Demonstration Started
+
+🔄 [TestCase 1] Valid Prediction...
+DEBUG: Processing task task_chronos_valid in state TaskState.PENDING
+DEBUG: Processing task task_chronos_valid in state TaskState.ANALYZING
+DEBUG: Processing task task_chronos_valid in state TaskState.PREDICTING
+🔮 CHRONOS: Predicting outcome for Task task_chronos_valid...
+   ⚗️ Shadow Result: Lines=2, Hash=e8e7d7e6eaeeff17
+☁️ GIT: [Chronos] Shadow Sync - Prediction: VALID - Task: task_chronos_valid
+Traceback (most recent call last):
+  File "D:\桌面\AGENT\chronos_demo.py", line 46, in <module>
+    orch.step()
+    ~~~~~~~~~^^
+  File "d:\桌面\AGENT\antigravity\core\mission_orchestrator.py", line 407, in step
+    from antigravity.core.local_reasoning import LocalReasoning
+ImportError: cannot import name 'LocalReasoning' from 'antigravity.core.local_reasoning' (d:\桌面\AGENT\antigravity\core\local_reasoning.py). Did you mean: 'LocalReasoningEngine'?

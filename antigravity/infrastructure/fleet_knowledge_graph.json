@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "last_updated": "2026-02-08T15:48:20.413173",
+  "last_updated": "2026-02-08T16:29:47.971220",
   "projects": {
     "bad_project": {
       "description": "No description available.",
@@ -17,6 +17,12 @@
           "type": "class",
           "file": "core/connection.py",
           "docstring": "Vortex Core Connection Pool.High-performance async networking."
+        },
+        {
+          "name": "VortexCrypto",
+          "type": "class",
+          "file": "core/crypto.py",
+          "docstring": "Vortex Core Encryption Utilities.Provides secure encryption and decryption for user data."
         }
       ],
       "tech_stack": [],

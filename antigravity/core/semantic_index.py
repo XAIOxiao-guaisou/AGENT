@@ -153,6 +153,8 @@ class SemanticIndex:
         if word.endswith('ed'): return word[:-2]
         if word.endswith('s') and not word.endswith('ss'): return word[:-1]
         if word.endswith('er'): return word[:-2]
+        if word.endswith('ion'): return word[:-3]
+        if word.endswith('ment'): return word[:-4]
         return word
 
     def _calculate_idf(self, term: str) -> float:

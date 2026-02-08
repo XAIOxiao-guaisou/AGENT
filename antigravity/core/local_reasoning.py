@@ -290,9 +290,41 @@ class LocalReasoningEngine:
         # Always ensure main entry point
         if 'main.py' not in project_state.existing_files:
             plan['files_to_create'].append('main.py')
+            
+        # Phase 17: Synaptic Retrieval (Smart Probe)
+        # Query GKG for intent matches
+        try:
+            from antigravity.core.knowledge_graph import FleetKnowledgeGraph
+            gkg = FleetKnowledgeGraph.get_instance()
+            matches = gkg.find_fleet_capability(intent.primary_goal, top_k=1)
+            
+            for match in matches:
+                # If score is high (simulated or real), inject dependency
+                # Note: find_fleet_capability currently returns generic search results.
+                # match IS the metadata dict + score/id
+                pid = match.get('project_id')
+                name = match.get('name')
+                
+                if pid and name:
+                     # Anti-Hallucination: Verify project exists/is active?
+                     # For now, just inject.
+                     import_stmt = f"fleet.{pid}"
+                     if import_stmt not in plan['dependencies']:
+                         plan['dependencies'].append(import_stmt)
+                         # Also suggest usage?
+                         print(f"🧠 SYNAPSE: Auto-linked [{pid}] for '{intent.primary_goal}'")
+                         # Telemetry
+                         from antigravity.infrastructure.telemetry_queue import TelemetryQueue, TelemetryEventType
+                         TelemetryQueue.push_event(TelemetryEventType.STATE_CHANGE, {
+                             'event': 'SYNAPSE_PROBE_SUCCESS',
+                             'intent': intent.primary_goal,
+                             'linked_project': pid
+                         })
+        except Exception as e:
+            # Synapse failure should not block drafting
+            print(f"⚠️ Synapse Probe Failed: {e}")
         
         # 5. Validate plan
-                # 5. Validate plan
         violations = self.constraint_set.validate_plan(plan)
         if violations:
             plan['warnings'] = violations

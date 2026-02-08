@@ -1,0 +1,292 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2026-02-07T19:36:00",
+  "files_modified": 13,
+  "total_changes": 43,
+  "changes": {
+    "antigravity\\core\\autonomous_auditor.py": [
+      {
+        "type": "ImportFrom (relative\u2192absolute)",
+        "old": ".sheriff_strategist",
+        "new": "antigravity.services.sheriff_strategist",
+        "line": 25
+      },
+      {
+        "type": "ImportFrom (relative\u2192absolute)",
+        "old": ".rca_immune_system",
+        "new": "antigravity.services.rca_immune_system",
+        "line": 124
+      },
+      {
+        "type": "ImportFrom (relative\u2192absolute)",
+        "old": ".file_lock_manager",
+        "new": "antigravity.infrastructure.file_lock_manager",
+        "line": 128
+      }
+    ],
+    "antigravity\\services\\healing_executor.py": [
+      {
+        "type": "ImportFrom (relative\u2192absolute)",
+        "old": ".autonomous_auditor",
+        "new": "antigravity.core.autonomous_auditor",
+        "line": 51
+      }
+    ],
+    "antigravity\\services\\quality_tower.py": [
+      {
+        "type": "ImportFrom (relative\u2192absolute)",
+        "old": ".delivery_gate",
+        "new": "antigravity.infrastructure.delivery_gate",
+        "line": 22
+      },
+      {
+        "type": "ImportFrom (relative\u2192absolute)",
+        "old": ".audit_history",
+        "new": "antigravity.infrastructure.audit_history",
+        "line": 23
+      }
+    ],
+    "antigravity\\services\\shadow_validator.py": [
+      {
+        "type": "ImportFrom (relative\u2192absolute)",
+        "old": ".delivery_gate",
+        "new": "antigravity.infrastructure.delivery_gate",
+        "line": 279
+      }
+    ],
+    "antigravity\\infrastructure\\delivery_gate.py": [
+      {
+        "type": "ImportFrom (relative\u2192absolute)",
+        "old": ".local_reasoning",
+        "new": "antigravity.core.local_reasoning",
+        "line": 142
+      },
+      {
+        "type": "ImportFrom (relative\u2192absolute)",
+        "old": ".sheriff_strategist",
+        "new": "antigravity.services.sheriff_strategist",
+        "line": 143
+      }
+    ],
+    "antigravity\\infrastructure\\monitor.py": [
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.config",
+        "new": "antigravity.utils.config",
+        "line": 12
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.state_manager",
+        "new": "antigravity.infrastructure.state_manager",
+        "line": 13
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.p3_root_detector",
+        "new": "antigravity.utils.p3_root_detector",
+        "line": 16
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.p3_state_manager",
+        "new": "antigravity.infrastructure.p3_state_manager",
+        "line": 17
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.env_checker",
+        "new": "antigravity.utils.env_checker",
+        "line": 96
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.env_checker",
+        "new": "antigravity.utils.env_checker",
+        "line": 412
+      }
+    ],
+    "antigravity\\interface\\cyberpunk_hud.py": [
+      {
+        "type": "ImportFrom (relative\u2192absolute)",
+        "old": ".telemetry_queue",
+        "new": "antigravity.infrastructure.telemetry_queue",
+        "line": 29
+      },
+      {
+        "type": "ImportFrom (relative\u2192absolute)",
+        "old": ".context_compressor",
+        "new": "antigravity.services.context_compressor",
+        "line": 30
+      }
+    ],
+    "antigravity\\interface\\dashboard.py": [
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.state_manager",
+        "new": "antigravity.infrastructure.state_manager",
+        "line": 5
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.config",
+        "new": "antigravity.utils.config",
+        "line": 6
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.env_checker",
+        "new": "antigravity.utils.env_checker",
+        "line": 499
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.p3_state_manager",
+        "new": "antigravity.infrastructure.p3_state_manager",
+        "line": 516
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.performance_monitor",
+        "new": "antigravity.infrastructure.performance_monitor",
+        "line": 589
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.vibe_check",
+        "new": "antigravity.utils.vibe_check",
+        "line": 636
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.p3_state_manager",
+        "new": "antigravity.infrastructure.p3_state_manager",
+        "line": 1151
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.performance_monitor",
+        "new": "antigravity.infrastructure.performance_monitor",
+        "line": 1165
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.performance_monitor",
+        "new": "antigravity.infrastructure.performance_monitor",
+        "line": 1231
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.performance_monitor",
+        "new": "antigravity.infrastructure.performance_monitor",
+        "line": 1358
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.context_manager",
+        "new": "antigravity.services.context_manager",
+        "line": 1359
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.quality_tower",
+        "new": "antigravity.services.quality_tower",
+        "line": 1479
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.audit_history",
+        "new": "antigravity.infrastructure.audit_history",
+        "line": 1487
+      }
+    ],
+    "antigravity\\interface\\p3_performance_monitor_ui.py": [
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.performance_monitor",
+        "new": "antigravity.infrastructure.performance_monitor",
+        "line": 120
+      }
+    ],
+    "antigravity\\interface\\p3_project_selector.py": [
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.p3_state_manager",
+        "new": "antigravity.infrastructure.p3_state_manager",
+        "line": 12
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.config",
+        "new": "antigravity.utils.config",
+        "line": 13
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.performance_monitor",
+        "new": "antigravity.infrastructure.performance_monitor",
+        "line": 86
+      }
+    ],
+    "antigravity\\utils\\p3_scaffolding_code.py": [
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.p3_state_manager",
+        "new": "antigravity.infrastructure.p3_state_manager",
+        "line": 232
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.performance_monitor",
+        "new": "antigravity.infrastructure.performance_monitor",
+        "line": 246
+      }
+    ],
+    "antigravity\\auditor.py": [
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.utils",
+        "new": "antigravity.utils.utils",
+        "line": 6
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.config",
+        "new": "antigravity.utils.config",
+        "line": 8
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.state_manager",
+        "new": "antigravity.infrastructure.state_manager",
+        "line": 9
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.dependency_analyzer",
+        "new": "antigravity.services.dependency_analyzer",
+        "line": 10
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.context_manager",
+        "new": "antigravity.services.context_manager",
+        "line": 11
+      },
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.performance_monitor",
+        "new": "antigravity.infrastructure.performance_monitor",
+        "line": 245
+      }
+    ],
+    "antigravity\\test_runner.py": [
+      {
+        "type": "ImportFrom",
+        "old": "antigravity.utils",
+        "new": "antigravity.utils.utils",
+        "line": 4
+      }
+    ]
+  }
+}

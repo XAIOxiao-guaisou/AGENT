@@ -198,8 +198,17 @@ class SheriffStrategist:
     
     def _load_protocol_config(self, config_path: str) -> Dict:
         """Load Sheriff-Exchange-v1 protocol configuration"""
-        with open(config_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            # Return default config if file doesn't exist
+            return {
+                'protocol_version': 'Sheriff-Exchange-v1',
+                'response_format': {
+                    'required_fields': ['approved', 'logic_score', 'expert_advice']
+                }
+            }
     
     async def request_semantic_audit(
         self,
@@ -315,7 +324,7 @@ class SheriffStrategist:
         ).hexdigest()[:16]
         
         request = {
-            'protocol_version': self.protocol_config['protocol_version'],
+            'protocol_version': self.protocol_config.get('protocol_version', 'Sheriff-Exchange-v1'),
             'request_id': request_id,
             'request_type': 'semantic_audit',
             'project_context': {
@@ -399,7 +408,7 @@ class SheriffStrategist:
             Validated audit result
         """
         # Validate required fields per protocol
-        required_fields = self.protocol_config['response_format']['required_fields']
+        required_fields = self.protocol_config.get('response_format', {}).get('required_fields', ['approved', 'logic_score', 'expert_advice'])
         
         for field in required_fields:
             if field not in response:

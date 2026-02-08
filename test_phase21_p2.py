@@ -21,7 +21,7 @@ from datetime import datetime
 import tempfile
 import shutil
 import sys
-from unittest.mock import Mock, AsyncMock, MagicMock
+from unittest.mock import Mock, AsyncMock, MagicMock, patch
 
 # Mock the antigravity modules to avoid import errors
 sys.modules['antigravity'] = Mock()

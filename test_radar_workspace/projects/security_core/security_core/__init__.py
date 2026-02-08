@@ -1,0 +1,1 @@
+def secure_func(): pass

@@ -92,28 +92,18 @@ class TelemetryQueue:
         
         Phase 21 Enhancement: LIFO cleanup when queue is full
         Ensures HUD always shows Sheriff Brain's latest "pulse"
+        Phase 16: Global Sanitation
         
         Args:
             event_type: Type of telemetry event
             data: Event-specific data
         """
-        # Phase 21 Enhancement: Industrial Hardening (Protobuf Shield)
-        # Deep recursive sanitization of all telemetry data
+        # Phase 16: Global Sanitation via io_utils
         try:
-            from antigravity.utils.io_utils import safe_content_for_protobuf
-            
-            def _sanitize_payload(payload):
-                if isinstance(payload, str):
-                    return safe_content_for_protobuf(payload)
-                elif isinstance(payload, dict):
-                    return {k: _sanitize_payload(v) for k, v in payload.items()}
-                elif isinstance(payload, list):
-                    return [_sanitize_payload(i) for i in payload]
-                return payload
-                
-            sanitized_data = _sanitize_payload(data)
+            from antigravity.utils.io_utils import sanitize_for_protobuf
+            sanitized_data = sanitize_for_protobuf(data)
         except ImportError:
-            sanitized_data = data # Fallback if utils not available (circular import risk)
+            sanitized_data = data # Fallback if utils not available
 
         event = TelemetryEvent(
             event_type=event_type.value,

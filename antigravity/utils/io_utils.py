@@ -12,15 +12,21 @@ import logging
 
 logger = logging.getLogger("antigravity.io")
 
-def safe_content_for_protobuf(content: str) -> str:
+def sanitize_for_protobuf(content):
     """
-    Force clean string for Protobuf compatibility.
-    Removes/Replaces Lone Surrogates which cause Protobuf crashes.
+    Global Sanitizer: Ensure any content is safe for Protobuf.
+    Recursively handles dicts, lists, and strings.
     """
-    try:
-        return content.encode('utf-8', 'replace').decode('utf-8')
-    except Exception:
-        return ""
+    if isinstance(content, dict):
+        return {k: sanitize_for_protobuf(v) for k, v in content.items()}
+    elif isinstance(content, list):
+        return [sanitize_for_protobuf(i) for i in content]
+    elif isinstance(content, str):
+        return content.encode('utf-8', errors='replace').decode('utf-8')
+    return content
+
+# Alias for backward compatibility if needed, or replace usages
+safe_content_for_protobuf = sanitize_for_protobuf
 
 def safe_read(file_path: Union[str, Path]) -> str:
     """

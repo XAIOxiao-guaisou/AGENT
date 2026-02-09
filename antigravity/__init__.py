@@ -11,7 +11,7 @@ from .core.local_reasoning import LocalReasoningEngine
 
 # SERVICES LAYER - Quality assurance and semantic processing
 from .services.sheriff_strategist import SheriffStrategist
-from .services.context_compressor import ContextCompressor
+from .core.context_compressor import ContextCompressor
 from .services.rca_immune_system import RCAImmuneSystem
 from .services.precision_healer import PrecisionHealer
 # from .services.quality_tower import QualityTower  # Removed: Functional module, not a class

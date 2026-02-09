@@ -137,13 +137,13 @@ class MissionOrchestrator:
         
         # v1.1.0 Feature: Environment Awareness
         from antigravity.infrastructure.env_scanner import EnvScanner
-        self.env_scanner = EnvScanner(project_root)
+        self.env_scanner = EnvScanner(self.project_root)
         
         # Phase 16.1: Shadow Kernel
         self.shadow_kernel = VirtualMemoryBuffer()
         
         # Phase 21: Resilience
-        self.checkpoint_dir = Path(project_root) / ".antigravity" / "checkpoints"
+        self.checkpoint_dir = self.project_root / ".antigravity" / "checkpoints"
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self._restore_from_checkpoint()
 
@@ -445,8 +445,25 @@ class MissionOrchestrator:
     def _handle_predicting(self, task):
         print(f"🔮 CHRONOS: Predicting outcome for Task {task.task_id}...")
         
-        proposed_file = task.metadata.get('file_path')
         proposed_content = task.metadata.get('content')
+        
+        # Phase 24: Swarm Optimization (Payload Compression)
+        if proposed_content:
+            from antigravity.core.context_compressor import ContextCompressor
+            compressor = ContextCompressor(str(self.project_root))
+            original_size = len(proposed_content)
+            
+            # Compress payload
+            compressed = compressor.compress_payload(proposed_content)
+            ratio = len(compressed) / original_size if original_size > 0 else 1.0
+            
+            print(f"   📉 Swarm Opt: {original_size}b -> {len(compressed)}b ({ratio:.2%})")
+            
+            # Update task metadata with optimized payload
+            task.metadata['content'] = compressed
+            proposed_content = compressed
+        
+        proposed_file = task.metadata.get('file_path')
         
         if proposed_file and proposed_content:
             from pathlib import Path

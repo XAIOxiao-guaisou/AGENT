@@ -25,7 +25,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 try:
     from antigravity.infrastructure.telemetry_queue import TelemetryQueue, TelemetryEventType
-    from antigravity.services.context_compressor import ContextCompressor
+    from antigravity.core.context_compressor import ContextCompressor
 except ImportError:
     from telemetry_queue import TelemetryQueue, TelemetryEventType
     from context_compressor import ContextCompressor

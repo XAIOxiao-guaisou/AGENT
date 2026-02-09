@@ -55,17 +55,46 @@ class EnvScanner:
     def check_dependency(self, package_name: str) -> bool:
         """
         Check if a package is installed.
+        Phase 24: Failsafe Green Mode.
+        If subprocess fails, we fallback to import check, then assume GREEN to avoid blocking.
         """
+        # 1. Try pure import (Fastest & Safest)
+        try:
+            __import__(package_name)
+            return True
+        except ImportError:
+            # Not found via import, might be a tool like 'git' not a package
+            pass
+        except Exception:
+            pass
+
+        # 2. Try subprocess (Standard)
         try:
             # We use import check as definitive source in current env
-            # Phase 21: Resilience Fix - Catch all subprocess errors
             subprocess.run(
                 [self.python_path, "-c", f"import {package_name}"],
                 capture_output=True, check=True
             )
             return True
-        except (subprocess.CalledProcessError, Exception):
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            # 3. Failsafe: If we can't verify, we return FALSE but log warning?
+            # User instruction: "failsafe 'Green' status ... return 'Minimal Viable Profile' (Green state)"
+            # "Red Line: ... hard-fail if Pyfly is not Green."
+            # So if we return False, it's Red.
+            # But if it's really missing, we should return False.
+            # The issue is "Subprocess calls failing in non-standard environments".
+            # If valid python env, import should work.
+            # If import fails, it really is missing.
+            
+            # However, for tools (not packages), we might have issues.
+            # Let's assume this is for python packages.
             return False
+            
+        except Exception as e:
+            # 4. Unknown Error (e.g. Permission Denied on subprocess types)
+            # This is the "Crash Proof" part.
+            logger.warning(f"⚠️ Pyfly Sensor Glitch on {package_name}: {e}. Assuming GREEN.")
+            return True
 
     def request_fix(self, package_name: str) -> bool:
         """

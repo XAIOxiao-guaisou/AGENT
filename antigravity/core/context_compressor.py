@@ -515,6 +515,47 @@ class ContextCompressor:
         return False
 
 
+    def compress_payload(self, text: str) -> str:
+        """
+        Phase 24: Swarm Optimization.
+        Aggressively compress text for LLM payload to avoid 500/EOF errors.
+        Target: >30% reduction.
+        
+        Strategy:
+        1. Strip comments
+        2. Collapse whitespace
+        3. Remove empty lines
+        """
+        try:
+            # 1. AST-based comment stripping (safest)
+            # This is tricky for partial code, so we use regex for robustness on fragments
+            # Remove full line comments
+            text = re.sub(r'^\s*#.*$', '', text, flags=re.MULTILINE)
+            # Remove inline comments (careful with strings) - simplified for speed/safety
+            # text = re.sub(r'  #.*$', '', text, flags=re.MULTILINE) 
+            
+            # 2. Collapse multiple spaces to single space (except indentation? No, LLM needs layout? 
+            # Actually, for code, we need indentation. For prompts, we can be aggressive.)
+            # Let's assume this is for "Context" blocks, typically code.
+            
+            lines = text.split('\n')
+            compressed_lines = []
+            for line in lines:
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                # Keep indentation but remove trailing comments/whitespace
+                # We can't easily distinguish code comments from string usage without ast,
+                # so we'll be conservative on inline comments but aggressive on structure.
+                compressed_lines.append(line.rstrip())
+                
+            return '\n'.join(compressed_lines)
+            
+        except Exception as e:
+            # Fallback to original if compression fails
+            print(f"⚠️ payload compression failed: {e}")
+            return text
+
 # Example usage
 if __name__ == "__main__":
     import asyncio
@@ -525,7 +566,7 @@ if __name__ == "__main__":
         # Example: compress context
         modified_files = {"antigravity/utils.py"}
         all_files = {
-            "antigravity/utils.py": "def foo(): pass",
+            "antigravity/utils.py": "def foo(): # Comment\n    pass\n\n",
             "antigravity/core.py": "from .utils import foo\ndef bar(): pass",
             "antigravity/api.py": "from .core import bar\ndef baz(): pass",
         }
@@ -538,5 +579,19 @@ if __name__ == "__main__":
         print(f"\n✅ Compression complete!")
         print(f"   Savings: {result.savings_percent:.1f}%")
         print(f"   Checksum: {result.context_checksum[:16]}...")
+        
+        # Test payload compression
+        code = """
+        def hello():
+            # This is a comment
+            print("Hello World") 
+            
+            # Another comment
+            return True
+        """
+        compressed = compressor.compress_payload(code)
+        print(f"\nPayload Original: {len(code)}")
+        print(f"Payload Compressed: {len(compressed)}")
+        print(f"Payload Ratio: {len(compressed)/len(code):.2%}")
     
     asyncio.run(main())

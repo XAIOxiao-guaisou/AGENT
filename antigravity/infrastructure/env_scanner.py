@@ -18,7 +18,13 @@ class EnvScanner:
     """
     
     def __init__(self, project_root: str = "."):
-        self.project_root = Path(project_root)
+        # Phase 22: Deduplication - Use Standard P3 Root Detector
+        if project_root == ".":
+            from antigravity.utils.p3_root_detector import find_project_root
+            self.project_root = find_project_root()
+        else:
+            self.project_root = Path(project_root)
+            
         self.python_path = sys.executable
         
     def scan_environment(self) -> Dict:
@@ -52,12 +58,13 @@ class EnvScanner:
         """
         try:
             # We use import check as definitive source in current env
+            # Phase 21: Resilience Fix - Catch all subprocess errors
             subprocess.run(
                 [self.python_path, "-c", f"import {package_name}"],
                 capture_output=True, check=True
             )
             return True
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, Exception):
             return False
 
     def request_fix(self, package_name: str) -> bool:

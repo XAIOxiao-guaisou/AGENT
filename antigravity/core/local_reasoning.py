@@ -231,6 +231,71 @@ class ComplexTaskSplitter:
         tasks = [p.strip() for p in parts if len(p.strip()) > 5] # Min length filter
         return tasks if len(tasks) > 1 else []
 
+class ConsensusVoter:
+    """
+    Phase 20: Global Consensus.
+    Democratizes logic by requiring multi-node alignment.
+    """
+    def __init__(self, threshold=0.66):
+        self.threshold = threshold # 2/3 majority
+
+    def cast_votes(self, task_id: str, shadow_prediction: Dict) -> Dict:
+        """
+        Simulates 3 heterogeneous audit nodes.
+        Node A: Physical Integrity
+        Node B: Intent Resonance
+        Node C: Security Gate
+        """
+        votes = []
+        
+        # Node A: Physical Integrity
+        votes.append(self.audit_physical_integrity(shadow_prediction))
+        
+        # Node B: Intent Resonance
+        votes.append(self.audit_intent_resonance(shadow_prediction))
+        
+        # Node C: Security Gate
+        votes.append(self.audit_security_gate(shadow_prediction))
+        
+        # Calculate Approval
+        approval_count = sum(1 for v in votes if v['approved'])
+        approval_rate = approval_count / len(votes)
+        
+        status = "CONSENSUS_REACHED" if approval_rate >= self.threshold else "CONSENSUS_FAILED"
+        
+        return {
+            "status": status,
+            "rate": approval_rate,
+            "details": votes
+        }
+
+    def audit_physical_integrity(self, prediction: Dict) -> Dict:
+        """Node A: Checks if AST hash is stable and valid."""
+        phash = prediction.get('predicted_hash')
+        if phash == "PREDICTION_PARSE_ERROR":
+            return {"node": "Physical", "approved": False, "reason": "AST Parse Error"}
+        return {"node": "Physical", "approved": True, "reason": "AST Valid"}
+
+    def audit_intent_resonance(self, prediction: Dict) -> Dict:
+        """Node B: Checks if code aligns with PLAN.md (Simulated)."""
+        # In a real system, we'd compare vector embeddings of code vs plan.
+        # For v1.7.0, we accept unless explicitly flagged as "POISON_PILL" in content
+        content = prediction.get('simulated_content', "")
+        if "POISON_PILL" in content:
+             return {"node": "Intent", "approved": False, "reason": "Malicious Intent Detected"}
+        return {"node": "Intent", "approved": True, "reason": "Aligned with Plan"}
+
+    def audit_security_gate(self, prediction: Dict) -> Dict:
+        """Node C: Scans for hardcoded secrets or unsafe patterns."""
+        content = prediction.get('simulated_content', "")
+        # Simple check for hardcoded secrets pattern
+        if "SECRET_KEY =" in content or "password =" in content:
+             # Allow if it's os.getenv, reject if literal string (simplified)
+             if "os.getenv" not in content and "os.environ" not in content:
+                 return {"node": "Security", "approved": False, "reason": "Hardcoded Secret"}
+        return {"node": "Security", "approved": True, "reason": "Security Pass"}
+
+
 class LocalReasoningEngine:
     """
     Local Reasoning Engine - 本地推理引擎
@@ -244,51 +309,17 @@ class LocalReasoningEngine:
         self.constraint_set = ConstraintSet()
         self.intent_mapper = IntentMapper()
         self.task_splitter = ComplexTaskSplitter()
+        self.consensus_voter = ConsensusVoter() # Phase 20
     
     def draft_plan(self, idea: str) -> Dict:
         """
-        Draft execution plan based on intent / 基于意图起草执行计划
-        
-        Phase 19: Support Swarm Decomposition
+        Draft execution plan based on intent.
+        Phase 22: Optimized for reduced complexity.
         """
         # 0. Swarm Decomposition
-        subtasks = self.task_splitter.split(idea)
-        swarm_plan = None
-        
-        if subtasks:
-             print(f"🐝 SWARM: Detected complex task. Splitting into {len(subtasks)} sub-tasks: {subtasks}")
-             swarm_plan = {
-                 'type': 'swarm_composite',
-                 'intent': idea,
-                 'subtasks': [],
-                 'tasks': []
-             }
-             
-             # Process each subtask
-             try:
-                 from antigravity.core.knowledge_graph import FleetKnowledgeGraph
-                 gkg = FleetKnowledgeGraph.get_instance()
-                 
-                 for sub in subtasks:
-                     matches = gkg.find_fleet_capability(sub, top_k=1)
-                     assigned_node = matches[0]['project_id'] if matches else "local"
-                     score = matches[0]['score'] if matches else 0.0
-                     
-                     print(f"   - Subtask: '{sub}' -> Assigned to [{assigned_node}] (Score: {score:.2f})")
-                     
-                     swarm_plan['subtasks'].append({
-                         'intent': sub,
-                         'assigned_node': assigned_node,
-                         'confidence': score
-                     })
-                     
-                 # Return the composite plan immediately
-                 return swarm_plan
-                 
-             except Exception as e:
-                 print(f"⚠️ Swarm Assignment Failed: {e}")
-                 # Fallback to normal drafting if swarm fails
-
+        swarm_plan = self._draft_swarm_plan(idea)
+        if swarm_plan:
+            return swarm_plan
 
         # 1. Map intent
         intent = self.intent_mapper.map(idea)
@@ -296,7 +327,7 @@ class LocalReasoningEngine:
         # 2. Analyze current project
         project_state = self.analyze_project_structure()
         
-        # 3. Generate plan
+        # 3. Initialize basic plan
         plan = {
             'intent': intent.primary_goal,
             'files_to_create': [],
@@ -305,106 +336,116 @@ class LocalReasoningEngine:
             'tasks': []
         }
         
-        # 4. Add components based on intent
-        if intent.requires_database and not project_state.has_models:
-            plan['files_to_create'].extend([
-                'models/__init__.py',
-                'models/base.py'
-            ])
-            plan['dependencies'].append('sqlalchemy')
-            plan['tasks'].append('Create database models')
-        
-        if intent.requires_api and not project_state.has_api:
-            plan['files_to_create'].extend([
-                'api/__init__.py',
-                'api/routes.py'
-            ])
-            if intent.framework:
-                plan['dependencies'].append(intent.framework)
-            plan['tasks'].append('Implement API endpoints')
-        
-        if intent.requires_auth and not project_state.has_auth:
-            plan['files_to_create'].extend([
-                'auth/__init__.py',
-                'auth/jwt_handler.py'
-            ])
-            plan['dependencies'].extend(['pyjwt', 'cryptography'])
-            plan['tasks'].append('Implement authentication')
-        
-        if intent.requires_testing and not project_state.has_tests:
-            plan['files_to_create'].extend([
-                'tests/__init__.py',
-                'tests/test_main.py'
-            ])
-            plan['dependencies'].append('pytest')
-            plan['tasks'].append('Create test suite')
-        
-        # Always ensure main entry point
-        if 'main.py' not in project_state.existing_files:
-            plan['files_to_create'].append('main.py')
+        # 4. Inject Components
+        self._inject_components(intent, project_state, plan)
             
-        # Phase 17: Synaptic Retrieval (Smart Probe)
-        # Query GKG for intent matches
-        try:
-            from antigravity.core.knowledge_graph import FleetKnowledgeGraph
-            gkg = FleetKnowledgeGraph.get_instance()
-            matches = gkg.find_fleet_capability(intent.primary_goal, top_k=1)
-            
-            for match in matches:
-                # If score is high (simulated or real), inject dependency
-                # Note: find_fleet_capability currently returns generic search results.
-                # match IS the metadata dict + score/id
-                pid = match.get('project_id')
-                name = match.get('name')
-                
-                if pid and name:
-                     score = match.get('score', 0)
-                     
-                     # Phase 18: Auto-Refactor (Redundancy Cleanup)
-                     if score > 0.95:
-                         print(f"♻️ REDUNDANCY DETECTED: Local intent matches [{pid}] with score {score}")
-                         
-                         # Trigger Event
-                         from antigravity.infrastructure.telemetry_queue import TelemetryQueue, TelemetryEventType
-                         TelemetryQueue.push_event(TelemetryEventType.STATE_CHANGE, {
-                             'event': 'REDUNDANCY_DETECTED',
-                             'intent': intent.primary_goal,
-                             'match': pid,
-                             'score': score
-                         })
-                         
-                         # Add Quarantine Action to Plan
-                         # We assume the user creates a file matching the intent?
-                         # Or we just flag it.
-                         plan.setdefault('quarantine', []).append({
-                             'reason': 'redundant_capability',
-                             'replacement': f"fleet.{pid}",
-                             'score': score
-                         })
-                         
-                     # Anti-Hallucination: Verify project exists/is active?
-                     # For now, just inject.
-                     import_stmt = f"fleet.{pid}"
-                     if import_stmt not in plan['dependencies']:
-                         plan['dependencies'].append(import_stmt)
-                         # Also suggest usage?
-                         print(f"🧠 SYNAPSE: Auto-linked [{pid}] for '{intent.primary_goal}'")
-                         # Telemetry
-                         TelemetryQueue.push_event(TelemetryEventType.STATE_CHANGE, {
-                             'event': 'SYNAPSE_PROBE_SUCCESS',
-                             'intent': intent.primary_goal,
-                             'linked_project': pid
-                         })
-        except Exception as e:
-            # Synapse failure should not block drafting
-            print(f"⚠️ Synapse Probe Failed: {e}")
+        # 5. Synaptic Retrieval (Smart Probe)
+        self._run_synaptic_probe(intent, plan)
         
-        # 5. Validate plan
+        # 6. Validate plan
         violations = self.constraint_set.validate_plan(plan)
         if violations:
             plan['warnings'] = violations
         
         return plan
+
+    def _draft_swarm_plan(self, idea: str) -> Optional[Dict]:
+        """Phase 19: Swarm Decomposition Logic"""
+        subtasks = self.task_splitter.split(idea)
+        if not subtasks:
+            return None
+            
+        print(f"🐝 SWARM: Detected complex task. Splitting into {len(subtasks)} sub-tasks.")
+        swarm_plan = {
+            'type': 'swarm_composite',
+            'intent': idea,
+            'subtasks': [],
+            'tasks': []
+        }
+        
+        try:
+            from antigravity.core.knowledge_graph import FleetKnowledgeGraph
+            gkg = FleetKnowledgeGraph.get_instance()
+            
+            for sub in subtasks:
+                matches = gkg.find_fleet_capability(sub, top_k=1)
+                assigned_node = matches[0]['project_id'] if matches else "local"
+                score = matches[0]['score'] if matches else 0.0
+                
+                print(f"   - Subtask: '{sub}' -> Assigned to [{assigned_node}] (Score: {score:.2f})")
+                swarm_plan['subtasks'].append({
+                    'intent': sub,
+                    'assigned_node': assigned_node,
+                    'confidence': score
+                })
+            return swarm_plan
+        except Exception as e:
+            print(f"⚠️ Swarm Assignment Failed: {e}")
+            return None
+
+    def _inject_components(self, intent, project_state, plan):
+        """Phase 22: Component Injection Logic"""
+        # Database
+        if intent.requires_database and not project_state.has_models:
+            plan['files_to_create'].extend(['models/__init__.py', 'models/base.py'])
+            plan['dependencies'].append('sqlalchemy')
+            plan['tasks'].append('Create database models')
+        
+        # API
+        if intent.requires_api and not project_state.has_api:
+            plan['files_to_create'].extend(['api/__init__.py', 'api/routes.py'])
+            if intent.framework:
+                plan['dependencies'].append(intent.framework)
+            plan['tasks'].append('Implement API endpoints')
+        
+        # Auth
+        if intent.requires_auth and not project_state.has_auth:
+            plan['files_to_create'].extend(['auth/__init__.py', 'auth/jwt_handler.py'])
+            plan['dependencies'].extend(['pyjwt', 'cryptography'])
+            plan['tasks'].append('Implement authentication')
+        
+        # Testing
+        if intent.requires_testing and not project_state.has_tests:
+            plan['files_to_create'].extend(['tests/__init__.py', 'tests/test_main.py'])
+            plan['dependencies'].append('pytest')
+            plan['tasks'].append('Create test suite')
+        
+        # Entry Point
+        if 'main.py' not in project_state.existing_files:
+            plan['files_to_create'].append('main.py')
+
+    def _run_synaptic_probe(self, intent, plan):
+        """Phase 17: Synaptic Retrieval Logic"""
+        try:
+            from antigravity.core.knowledge_graph import FleetKnowledgeGraph
+            from antigravity.infrastructure.telemetry_queue import TelemetryQueue, TelemetryEventType
+            
+            gkg = FleetKnowledgeGraph.get_instance()
+            matches = gkg.find_fleet_capability(intent.primary_goal, top_k=1)
+            
+            for match in matches:
+                pid = match.get('project_id')
+                score = match.get('score', 0)
+                
+                if pid and score > 0.95:
+                    print(f"♻️ REDUNDANCY DETECTED: Local intent matches [{pid}] with score {score}")
+                    TelemetryQueue.push_event(TelemetryEventType.STATE_CHANGE, {
+                        'event': 'REDUNDANCY_DETECTED',
+                        'intent': intent.primary_goal, 'match': pid, 'score': score
+                    })
+                    plan.setdefault('quarantine', []).append({
+                        'reason': 'redundant_capability',
+                        'replacement': f"fleet.{pid}",
+                        'score': score
+                    })
+                
+                if pid:
+                    import_stmt = f"fleet.{pid}"
+                    if import_stmt not in plan['dependencies']:
+                        plan['dependencies'].append(import_stmt)
+                        print(f"🧠 SYNAPSE: Auto-linked [{pid}] for '{intent.primary_goal}'")
+        except Exception as e:
+            print(f"⚠️ Synapse Probe Failed: {e}")
     
     @staticmethod
     def validate_shadow_prediction(task_id: str, prediction: Dict) -> bool:

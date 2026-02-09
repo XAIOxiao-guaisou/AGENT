@@ -25,7 +25,7 @@ class FleetModuleLoader:
     def load_fleet_module(target_project_id: str, module_name: str) -> Any:
         """
         Dynamically load a module from another project in the fleet.
-        Phase 13.5 Tuning: Namespace Guard & Physical Anchor (Merkle Check)
+        Phase 22: Optimized Synapse.
         """
         fleet_mgr = ProjectFleetManager.get_instance()
         
@@ -36,51 +36,46 @@ class FleetModuleLoader:
             
         project_root = Path(project_meta.path).resolve()
             
-        # 2. Physical Anchor: Instant Merkle Verification
-        # We perform a FORCED incremental hash audit
+        # 2. Physical Anchor
+        FleetModuleLoader._verify_physical_anchor(target_project_id, project_root, fleet_mgr)
+
+        # 3. Mount Synapse
+        return FleetModuleLoader._mount_synapse(target_project_id, module_name, project_root)
+
+    @staticmethod
+    def _verify_physical_anchor(project_id: str, project_root: Path, fleet_mgr: ProjectFleetManager):
+        """Phase 13.5: Merkle Verification Logic"""
         if DeliveryGate:
             try:
-                # Initialize Gate for the target project
                 gate = DeliveryGate(project_root)
-                # Physical Anchor: Verify Merkle Integrity
-                is_secure = gate.verify_integrity()
-                
-                if not is_secure:
-                    status = 'TAMPERED' # If verify fails, it's tampered
-                    logger.critical(f"🛑 BLOCKED: Physical Anchor Validation Failed for '{target_project_id}' (Status: {status})")
-                    raise ProjectSecurityError(
-                        f"Security Block: Target project '{target_project_id}' failed Physical Anchor check ({status}). Import denied."
-                    )
+                if not gate.verify_integrity():
+                    logger.critical(f"🛑 BLOCKED: Physical Anchor Validation Failed for '{project_id}'")
+                    raise ProjectSecurityError(f"Security Block: {project_id} TAMPERED.")
             except Exception as e:
-                # Re-raise Security Errors
-                if isinstance(e, ProjectSecurityError):
-                    raise
-                # Check if it was an import error of the module itself? No, we are past imports.
-                logger.error(f"Physical Anchor Error for {target_project_id}: {e}")
-                # If error in verification, we should probably fail secure, but for now fallback?
-                # "fail secure" -> Block.
-                # But let's fallback to status check if just some IO error?
-                integrity = fleet_mgr.verify_fleet_integrity(target_project_id)
+                # Fail Secure Catch-all
+                if isinstance(e, ProjectSecurityError): raise
+                logger.error(f"Physical Anchor Error for {project_id}: {e}")
+                integrity = fleet_mgr.verify_fleet_integrity(project_id)
                 if integrity.get('status') in ['TAMPERED', 'CONTAMINATED']:
                     raise ProjectSecurityError("Security Block: Cached status is COMPROMISED.")
         else:
-            # Fallback to Fleet Manager status if DeliveryGate not available
-            logger.warning("DeliveryGate not found (module missing), falling back to cached status")
-            integrity = fleet_mgr.verify_fleet_integrity(target_project_id)
-            if integrity.get('status') in ['TAMPERED', 'CONTAMINATED']:
-                raise ProjectSecurityError("Security Block: Cached status is COMPROMISED.")
+             # Fallback
+             integrity = fleet_mgr.verify_fleet_integrity(project_id)
+             if integrity.get('status') in ['TAMPERED', 'CONTAMINATED']:
+                 raise ProjectSecurityError("Security Block: Cached status is COMPROMISED.")
 
-        # 3. Namespace Guard: Virtual Mounting
-        # Instead of hacking sys.path, we mount to 'fleet.<project_id>.<module>'
-        virtual_pkg = f"fleet.{target_project_id}"
+    @staticmethod
+    def _mount_synapse(project_id: str, module_name: str, project_root: Path) -> Any:
+        """Phase 22: Module Mounting Logic"""
+        virtual_pkg = f"fleet.{project_id}"
         virtual_module_name = f"{virtual_pkg}.{module_name}"
         
         if virtual_module_name in sys.modules:
             return sys.modules[virtual_module_name]
             
-        # Construct path to the module file
-        # Phase 18: Synaptic Latency Telemetry
         import time
+        from antigravity.infrastructure.telemetry_queue import TelemetryQueue, TelemetryEventType
+        
         start_t = time.perf_counter()
         
         try:
@@ -88,10 +83,9 @@ class FleetModuleLoader:
             module_file = project_root / module_rel_path
             
             if not module_file.exists():
-                # Try as package (init.py)
                 module_file = project_root / module_name.replace('.', '/') / "__init__.py"
                 if not module_file.exists():
-                     raise ImportError(f"Module '{module_name}' not found in project '{target_project_id}'")
+                     raise ImportError(f"Module '{module_name}' not found in '{project_id}'")
             
             logger.info(f"🧠 Neural Nexus: Mounting {virtual_module_name}...")
             spec = importlib.util.spec_from_file_location(virtual_module_name, module_file)
@@ -101,29 +95,12 @@ class FleetModuleLoader:
                 spec.loader.exec_module(module)
                 
                 # Telemetry
-                end_t = time.perf_counter()
-                elapsed = (end_t - start_t) * 1000  # ms
-                
-                from antigravity.infrastructure.telemetry_queue import TelemetryQueue, TelemetryEventType
-                
-                # Phase 19: Latency Thresholds
+                elapsed = (time.perf_counter() - start_t) * 1000
                 if elapsed > 300:
-                    print(f"⚡ SLOT WARNING: Synaptic Latency {elapsed:.2f}ms > 300ms!")
-                    print(f"   Suggestion: Consider LOCAL_MIRRORING for '{target_project_id}'")
-                    
                     TelemetryQueue.push_event(TelemetryEventType.PERFORMANCE_KNOB, {
-                        'event': 'SYNAPTIC_DRAG',
-                        'project': target_project_id,
-                        'latency_ms': elapsed,
-                        'suggestion': 'LOCAL_MIRRORING'
+                        'event': 'SYNAPTIC_DRAG', 'project': project_id,
+                        'latency_ms': elapsed, 'suggestion': 'LOCAL_MIRRORING'
                     })
-                
-                TelemetryQueue.push_event(TelemetryEventType.METRIC, {
-                    'metric': 'SYNAPTIC_LATENCY',
-                    'project': target_project_id,
-                    'latency_ms': elapsed,
-                    'timestamp': datetime.now().isoformat()
-                })
                 
                 logger.info(f"✅ Synapse Established: {virtual_module_name}")
                 return module

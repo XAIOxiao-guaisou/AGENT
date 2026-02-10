@@ -1,11 +1,7 @@
 {
-  "version": "v2.2.0-force",
-  "status": "GLOBAL_MIGRATION_FORCE_ALIGNED",
-  "timestamp": "2026-02-10T18:38:00",
-  "signed_by": "Chief Reviewer",
-  "features": [
-    "Force-Drop Init",
-    "Hunter-Seeker Protocol",
-    "Zero-Hardcoding"
-  ]
+  "version": "2.2.0",
+  "status": "MIGRATION_READY",
+  "timestamp": "2026-02-10T19:00:00.000000",
+  "signature": "ANTIGRAVITY-SOVEREIGN-V2-2-0-MIGRATION-SEAL-20260210",
+  "integrity_hash": "3b1b062d3479dd79"
 }

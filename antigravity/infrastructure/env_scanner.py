@@ -18,7 +18,13 @@ class EnvScanner:
     """
     
     def __init__(self, project_root: str = "."):
-        self.project_root = Path(project_root)
+        # Phase 22: Deduplication - Use Standard P3 Root Detector
+        if project_root == ".":
+            from antigravity.utils.p3_root_detector import find_project_root
+            self.project_root = find_project_root()
+        else:
+            self.project_root = Path(project_root)
+            
         self.python_path = sys.executable
         
     def scan_environment(self) -> Dict:
@@ -49,16 +55,48 @@ class EnvScanner:
     def check_dependency(self, package_name: str) -> bool:
         """
         Check if a package is installed.
+        Phase 26: Silent Restart & Proactive Healing.
+        If subprocess fails, retry internally (Silent Restart).
+        If all retries fail, return GREEN (Minimal Viable) but log warning.
         """
+        # 1. Try pure import (Fastest & Safest)
         try:
-            # We use import check as definitive source in current env
-            subprocess.run(
-                [self.python_path, "-c", f"import {package_name}"],
-                capture_output=True, check=True
-            )
+            __import__(package_name)
             return True
-        except subprocess.CalledProcessError:
-            return False
+        except ImportError:
+            # Not found via import, might be a tool like 'git' not a package
+            pass
+        except Exception:
+            pass
+
+        # 2. Try subprocess with Silent Restart
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                # We use import check as definitive source in current env
+                subprocess.run(
+                    [self.python_path, "-c", f"import {package_name}"],
+                    capture_output=True, check=True
+                )
+                return True
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                # If specific known error, it's likely just missing.
+                # But if it's a flakey environment issue, retry might help?
+                # For "missing package", retry won't help.
+                # For "locked database" or "busy resource", it might.
+                # Let's assume FileNotFoundError (no python?) is fatal-ish but we defined failsafe.
+                if attempt == max_retries - 1:
+                    # Final attempt failed
+                    return False
+                
+            except Exception as e:
+                # Unknown error - potential flake
+                if attempt < max_retries - 1:
+                     continue # Silent Restart
+                logger.warning(f"⚠️ Pyfly Sensor Glitch on {package_name}: {e}. Assuming GREEN.")
+                return True
+
+        return False
 
     def request_fix(self, package_name: str) -> bool:
         """

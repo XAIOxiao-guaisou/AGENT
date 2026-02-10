@@ -41,8 +41,24 @@ class FleetKnowledgeGraph:
                 with open(self.graph_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     self.knowledge.update(data)
+                    self._rebuild_index()
             except Exception as e:
                 logger.error(f"Failed to load GKG: {e}")
+
+    def _rebuild_index(self):
+        """Rebuild semantic index from loaded knowledge"""
+        projects = self.knowledge.get('projects', {})
+        for pid, wisdom in projects.items():
+            for item in wisdom.get('exports', []):
+                try:
+                    doc_id = f"{pid}:{item['name']}"
+                    # Rich text for indexing
+                    text = f"{item['name']} {item.get('docstring', '')} {item.get('type','')} {pid}"
+                    meta = item.copy()
+                    meta['project_id'] = pid
+                    self.semantic_index.learn(doc_id, text, meta)
+                except Exception:
+                    continue
 
     def save_graph(self):
         try:

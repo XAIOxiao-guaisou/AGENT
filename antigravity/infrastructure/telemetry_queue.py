@@ -39,6 +39,8 @@ class TelemetryEventType(Enum):
     COMPRESSION_METRICS = "compression_metrics"
     GHOST_TASK_DETECTED = "ghost_task_detected"
     AGGREGATED_SUMMARY = "aggregated_summary"  # Phase 21 Polishing: High-frequency aggregation
+    METRIC = "metric"
+    PERFORMANCE_KNOB = "performance_knob"
 
 
 @dataclass

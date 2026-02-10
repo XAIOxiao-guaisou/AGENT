@@ -1,0 +1,12 @@
+{
+  "project_name": "vortex_core",
+  "version": "1.0.0",
+  "project_hash": "sha256:a5c032f4faf0c5b1a73cfd99b4d481311ada25cee1cf24fe367ef975796a1ced",
+  "source_code_merkle_root": "merkle:778821f59ed4a5d5d20443a8f18b0c8f7f377f9c1f0fd42514b44ec4205108b3",
+  "delivery_approved": true,
+  "local_signature": {
+    "signed": true,
+    "timestamp": "2026-02-08T17:00:25.826885",
+    "signature": "LOCAL-VORTEX-20260208170025"
+  }
+}

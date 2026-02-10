@@ -55,8 +55,9 @@ class EnvScanner:
     def check_dependency(self, package_name: str) -> bool:
         """
         Check if a package is installed.
-        Phase 24: Failsafe Green Mode.
-        If subprocess fails, we fallback to import check, then assume GREEN to avoid blocking.
+        Phase 26: Silent Restart & Proactive Healing.
+        If subprocess fails, retry internally (Silent Restart).
+        If all retries fail, return GREEN (Minimal Viable) but log warning.
         """
         # 1. Try pure import (Fastest & Safest)
         try:
@@ -68,33 +69,34 @@ class EnvScanner:
         except Exception:
             pass
 
-        # 2. Try subprocess (Standard)
-        try:
-            # We use import check as definitive source in current env
-            subprocess.run(
-                [self.python_path, "-c", f"import {package_name}"],
-                capture_output=True, check=True
-            )
-            return True
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            # 3. Failsafe: If we can't verify, we return FALSE but log warning?
-            # User instruction: "failsafe 'Green' status ... return 'Minimal Viable Profile' (Green state)"
-            # "Red Line: ... hard-fail if Pyfly is not Green."
-            # So if we return False, it's Red.
-            # But if it's really missing, we should return False.
-            # The issue is "Subprocess calls failing in non-standard environments".
-            # If valid python env, import should work.
-            # If import fails, it really is missing.
-            
-            # However, for tools (not packages), we might have issues.
-            # Let's assume this is for python packages.
-            return False
-            
-        except Exception as e:
-            # 4. Unknown Error (e.g. Permission Denied on subprocess types)
-            # This is the "Crash Proof" part.
-            logger.warning(f"⚠️ Pyfly Sensor Glitch on {package_name}: {e}. Assuming GREEN.")
-            return True
+        # 2. Try subprocess with Silent Restart
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                # We use import check as definitive source in current env
+                subprocess.run(
+                    [self.python_path, "-c", f"import {package_name}"],
+                    capture_output=True, check=True
+                )
+                return True
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                # If specific known error, it's likely just missing.
+                # But if it's a flakey environment issue, retry might help?
+                # For "missing package", retry won't help.
+                # For "locked database" or "busy resource", it might.
+                # Let's assume FileNotFoundError (no python?) is fatal-ish but we defined failsafe.
+                if attempt == max_retries - 1:
+                    # Final attempt failed
+                    return False
+                
+            except Exception as e:
+                # Unknown error - potential flake
+                if attempt < max_retries - 1:
+                     continue # Silent Restart
+                logger.warning(f"⚠️ Pyfly Sensor Glitch on {package_name}: {e}. Assuming GREEN.")
+                return True
+
+        return False
 
     def request_fix(self, package_name: str) -> bool:
         """

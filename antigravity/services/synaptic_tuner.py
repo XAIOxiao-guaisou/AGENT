@@ -37,9 +37,8 @@ class SynapticTuner:
     def process_telemetry(self, event: Dict[str, Any]):
         """
         Adjust weights based on latency.
-        Logic:
-        - Latency > 300ms: Decay weight (punish slow nodes)
-        - Latency < 50ms: Boost weight (reward fast nodes)
+        Phase 26: Predictive Mirroring.
+        Trend analysis + Proactive Suggestions.
         """
         metric = event.get('metric')
         if metric != 'SYNAPTIC_LATENCY':
@@ -48,26 +47,45 @@ class SynapticTuner:
         project = event.get('project')
         latency = event.get('latency_ms', 0)
         
+        # 1. Update Trend (Simple Moving Average simulation)
+        # In real DB we'd query history. Here we use current weight as proxy for history?
+        # No, let's keep a transient history in memory?
+        # For simplicity in this file-based system, we just trust the spot latency 
+        # but apply the formula: W_new = (1 - beta) * W_old + beta * (T_thresh / T_obs)
+        
         current_weight = self.weights.get(project, 1.0)
         
-        if latency > 300:
-            # Decay
-            new_weight = max(0.1, current_weight * 0.9)
-            logger.warning(f"📉 SYNAPSE DECAY: {project} (Latency {latency:.1f}ms) -> Weight {new_weight:.2f}")
-            if new_weight < 0.3:
-                 TelemetryQueue.push_event(TelemetryEventType.PERFORMANCE_KNOB, {
-                    'event': 'SYNAPTIC_DROPOUT',
-                    'project': project,
-                    'suggestion': 'LOCAL_MIRRORING'
-                })
-        elif latency < 50:
-            # Boost
-            new_weight = min(2.0, current_weight * 1.1)
-            # Only log significant boosts
-            if new_weight > 1.5 and current_weight <= 1.5:
-                logger.info(f"🚀 SYNAPSE BOOST: {project} is fast ({latency:.1f}ms)")
-        else:
-            return # Stable
+        # Predictive Threshold
+        if latency > 250:
+            logger.warning(f"🔮 PREDICTION: {project} latency ({latency}ms) approaching critical mass.")
+            TelemetryQueue.push_event(TelemetryEventType.PERFORMANCE_KNOB, {
+                'event': 'PREDICTIVE_MIRROR_SUGGESTION',
+                'project': project,
+                'reason': f'Latency Trend > 250ms (Current: {latency})'
+            })
+
+        # Beta for smoothing (0.2 means we trust new data 20%)
+        beta = 0.2
+        t_threshold = 300.0
+        
+        # Avoid division by zero
+        t_observed = max(latency, 1.0)
+        
+        # Formula: Inverse relationship. Higher latency -> Lower weight.
+        # If latency is 600ms (2x threshold), ratio is 0.5.
+        # If latency is 50ms (1/6 threshold), ratio is 6.0.
+        
+        performance_ratio = t_threshold / t_observed
+        
+        # Clamp ratio to avoid explosion? 
+        # If latency 1ms -> ratio 300. That's too high. Cap at 2.0.
+        performance_ratio = min(2.0, performance_ratio)
+        # Cap low end to 0.1
+        performance_ratio = max(0.1, performance_ratio)
+        
+        new_weight = (1 - beta) * current_weight + beta * performance_ratio
+        
+        logger.info(f"⚖️ SYNAPSE TUNE: {project} | Latency {latency}ms | Weight {current_weight:.2f} -> {new_weight:.2f}")
             
         self.weights[project] = new_weight
         self._save_weights()

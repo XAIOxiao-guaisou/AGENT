@@ -80,7 +80,7 @@ class SheriffStrategist:
         self.audit_history: List[Dict] = []
         
         # Phase 21 Enhancement: Context compressor for 92% compression
-        from .context_compressor import ContextCompressor
+        from antigravity.core.context_compressor import ContextCompressor
         self.compressor = ContextCompressor(project_root=project_root)
     
     def tune_plan(self, plan: Dict) -> OptimizedPlan:

@@ -21,7 +21,7 @@ class AntigravityMonitor(FileSystemEventHandler):
         self.project_root = project_root
         self.watch_root = Path(project_root).resolve()
         self.state_manager = StateManager(project_root)
-        self.auditor = Auditor(project_root, state_manager=self.state_manager)
+        self.auditor = Auditor(project_root)
         self.timers = {}
         self.debounce_seconds = 3.0
         self.execution_lock = Lock()

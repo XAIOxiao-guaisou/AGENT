@@ -4,6 +4,7 @@ import time
 import os
 from antigravity.infrastructure.state_manager import StateManager
 from antigravity.utils.config import CONFIG
+from pathlib import Path
 try:
     from antigravity.infrastructure.debug_monitor import enable_monitoring, show_debug_panel
     enable_monitoring()
@@ -160,8 +161,8 @@ else:
     st.session_state.active_state_mgr = state_mgr
     st.session_state.active_perf_monitor = None
 
-if selected_project != 'Global (Legacy)':
-    project_root = projects_dir / selected_project
+if selected_project_id != 'Global (Legacy)':
+    project_root = st.session_state.active_project_root
     with st.sidebar.expander(f"📋 {t('project_info')}"):
         if (project_root / 'PLAN.md').exists():
             plan_size = (project_root / 'PLAN.md').stat().st_size
@@ -178,7 +179,7 @@ if selected_project != 'Global (Legacy)':
     st.sidebar.markdown('### 🛠️ Quick Actions')
     col1, col2 = st.sidebar.columns(2)
     with col1:
-        if st.button(t('run_vibe_check'), use_container_width=True):
+        if st.button(t('vibe_check_button'), use_container_width=True):
             from antigravity.utils.vibe_check import VibeChecker
             with st.status(t('vibe_check_running'), expanded=True) as status:
                 checker = VibeChecker(project_root)
@@ -631,155 +632,52 @@ try:
         st.metric("Total Nodes", len(kg.knowledge.get('projects', {})))
     
     # Graph Visualization
-    import graphviz
-    graph = graphviz.Digraph()
-    graph.attr(rankdir='LR', bgcolor='transparent')
-    
-    # Nodes
-    for pid, data in kg.knowledge.get('projects', {}).items():
-        label = f"{pid}\n({len(data.get('exports', []))} exports)"
-        graph.node(pid, label, shape='box', style='filled', fillcolor='#2b2b2b', fontcolor='white', color='#00d2ff')
+    try:
+        import graphviz
+        graph = graphviz.Digraph()
+        graph.attr(rankdir='LR', bgcolor='transparent')
         
-    # Edges (Dependencies)
-    # We retrieve dependencies from FleetManager
-    from antigravity.core.fleet_manager import ProjectFleetManager
-    fm = ProjectFleetManager.get_instance()
-    
-    edge_count = 0
-    for pid in kg.knowledge.get('projects', {}):
-        deps = fm.scan_cross_dependencies(pid)
-        for dep in deps:
-            graph.edge(pid, dep, color='#ff0055', style='dashed') # Red for dependencies (Pulse Lines)
-            edge_count += 1
-            
-    with col2:
-        st.metric("Active Synapses", edge_count)
-        
-    st.graphviz_chart(graph)
-    
-    with st.expander("🔍 Semantic Index (Exports)"):
+        # Nodes
         for pid, data in kg.knowledge.get('projects', {}).items():
-            st.markdown(f"**{pid}**")
-            for exp in data.get('exports', []):
-                st.code(f"{exp['type']} {exp['name']} ({exp['file']})\n# {exp['docstring']}", language='python')
-
-except Exception as e:
-    st.error(f"Neural Nexus Offline: {e}")
-
-st.markdown('---')
-st.header('🧠 Neural Nexus - 舰队神经枢纽')
-st.caption('Global Knowledge Graph & Semantic Topology')
-
-try:
-    from antigravity.core.knowledge_graph import FleetKnowledgeGraph
-    kg = FleetKnowledgeGraph.get_instance()
-    
-    # Auto-scan if empty
-    if not kg.knowledge.get('projects'):
-        from antigravity.core.fleet_manager import ProjectFleetManager
-        fm = ProjectFleetManager.get_instance()
-        kg.scan_fleet_wisdom(fm.get_fleet_status())
+            label = f"{pid}\n({len(data.get('exports', []))} exports)"
+            graph.node(pid, label, shape='box', style='filled', fillcolor='#2b2b2b', fontcolor='white', color='#00d2ff')
+            
+        # Edges (Dependencies)
+        # We retrieve dependencies from GKG Relations (Phase 14: Pulse Strength)
+        edge_count = 0
+        relationships = kg.knowledge.get('relationships', [])
         
-    # Stats
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Total Nodes", len(kg.knowledge.get('projects', {})))
-    
-    # Graph Visualization
-    import graphviz
-    graph = graphviz.Digraph()
-    graph.attr(rankdir='LR', bgcolor='transparent')
-    
-    # Nodes
-    for pid, data in kg.knowledge.get('projects', {}).items():
-        label = f"{pid}\n({len(data.get('exports', []))} exports)"
-        graph.node(pid, label, shape='box', style='filled', fillcolor='#2b2b2b', fontcolor='white', color='#00d2ff')
-        
-    # Edges (Dependencies)
-    # Edges (Dependencies)
-    # We retrieve dependencies from GKG Relations (Phase 14: Pulse Strength)
-    edge_count = 0
-    relationships = kg.knowledge.get('relationships', [])
-    
-    # Fallback to FM scan if GKG relations empty (backward compatibility)
-    if not relationships:
-        from antigravity.core.fleet_manager import ProjectFleetManager
-        fm = ProjectFleetManager.get_instance()
-        for pid in kg.knowledge.get('projects', {}):
-            deps = fm.scan_cross_dependencies(pid)
-            for dep in deps:
-                graph.edge(pid, dep, color='#ff0055', style='dashed')
+        # Fallback to FM scan if GKG relations empty (backward compatibility)
+        if not relationships:
+            from antigravity.core.fleet_manager import ProjectFleetManager
+            fm = ProjectFleetManager.get_instance()
+            for pid in kg.knowledge.get('projects', {}):
+                deps = fm.scan_cross_dependencies(pid)
+                for dep in deps:
+                    graph.edge(pid, dep, color='#ff0055', style='dashed')
+                    edge_count += 1
+        else:
+            for rel in relationships:
+                src = rel.get('source')
+                tgt = rel.get('target')
+                strength = rel.get('strength', 1)
+                # Pulse Visual: Thicker lines for stronger bonds
+                width = str(max(1, strength / 2))
+                graph.edge(src, tgt, color='#ff0055', style='dashed', penwidth=width)
                 edge_count += 1
-    else:
-        for rel in relationships:
-            src = rel.get('source')
-            tgt = rel.get('target')
-            strength = rel.get('strength', 1)
-            # Pulse Visual: Thicker lines for stronger bonds
-            width = str(max(1, strength / 2))
-            graph.edge(src, tgt, color='#ff0055', style='dashed', penwidth=width)
-            edge_count += 1
+                
+        with col2:
+            st.metric("Active Synapses", edge_count)
             
-    with col2:
-        st.metric("Active Synapses", edge_count)
+        st.graphviz_chart(graph)
         
-    st.graphviz_chart(graph)
-    
-    with st.expander("🔍 Semantic Index (Exports)"):
-        for pid, data in kg.knowledge.get('projects', {}).items():
-            st.markdown(f"**{pid}**")
-            for exp in data.get('exports', []):
-                st.code(f"{exp['type']} {exp['name']} ({exp['file']})\n# {exp['docstring']}", language='python')
-
-except Exception as e:
-    st.error(f"Neural Nexus Offline: {e}")
-
-st.markdown('---')
-st.header('🧠 Neural Nexus - 舰队神经枢纽')
-st.caption('Global Knowledge Graph & Semantic Topology')
-
-try:
-    from antigravity.core.knowledge_graph import FleetKnowledgeGraph
-    kg = FleetKnowledgeGraph.get_instance()
-    
-    # Auto-scan if empty
-    if not kg.knowledge.get('projects'):
-        from antigravity.core.fleet_manager import ProjectFleetManager
-        fm = ProjectFleetManager.get_instance()
-        kg.scan_fleet_wisdom(fm.get_fleet_status())
+    except ImportError:
+        with col2:
+             st.metric("Active Synapses", "Visual Offline")
+        st.info("💡 Install `graphviz` to visualize the dependency graph.")
+    except Exception as e:
+        st.warning(f"Graph Visualization Warning: {e}")
         
-    # Stats
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Total Nodes", len(kg.knowledge.get('projects', {})))
-    
-    # Graph Visualization
-    import graphviz
-    graph = graphviz.Digraph()
-    graph.attr(rankdir='LR', bgcolor='transparent')
-    
-    # Nodes
-    for pid, data in kg.knowledge.get('projects', {}).items():
-        label = f"{pid}\n({len(data.get('exports', []))} exports)"
-        graph.node(pid, label, shape='box', style='filled', fillcolor='#2b2b2b', fontcolor='white', color='#00d2ff')
-        
-    # Edges (Dependencies)
-    # We retrieve dependencies from FleetManager
-    from antigravity.core.fleet_manager import ProjectFleetManager
-    fm = ProjectFleetManager.get_instance()
-    
-    edge_count = 0
-    for pid in kg.knowledge.get('projects', {}):
-        deps = fm.scan_cross_dependencies(pid)
-        for dep in deps:
-            graph.edge(pid, dep, color='#ff0055', style='dashed') # Red for dependencies (Pulse Lines)
-            edge_count += 1
-            
-    with col2:
-        st.metric("Active Synapses", edge_count)
-        
-    st.graphviz_chart(graph)
-    
     with st.expander("🔍 Semantic Index (Exports)"):
         for pid, data in kg.knowledge.get('projects', {}).items():
             st.markdown(f"**{pid}**")

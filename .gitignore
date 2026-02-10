@@ -48,3 +48,6 @@ desktop.ini
 node_modules/
 npm-debug.log*
 /src
+
+# Projects
+projects/

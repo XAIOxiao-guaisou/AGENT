@@ -29,7 +29,7 @@ def start_antigravity():
     print("📡 正在启动监控代理...")
     print("📡 Starting Monitor Agent...")
     monitor_proc = subprocess.Popen(
-        [python_exe, "-m", "antigravity.monitor"],
+        [python_exe, "-m", "antigravity.infrastructure.monitor"],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -48,7 +48,7 @@ def start_antigravity():
     print("🌐 Starting Web Dashboard...")
     dashboard_proc = subprocess.Popen(
         [python_exe, "-m", "streamlit", "run", 
-         "antigravity/dashboard.py", 
+         "antigravity/interface/dashboard.py", 
          "--server.headless", "true",
          "--server.port", "8501"],
         stdout=subprocess.DEVNULL,
@@ -86,7 +86,7 @@ def start_antigravity():
                 print("🔄 正在尝试重启监控器...")
                 print("🔄 Attempting to restart monitor...")
                 monitor_proc = subprocess.Popen(
-                    [python_exe, "-m", "antigravity.monitor"],
+                    [python_exe, "-m", "antigravity.infrastructure.monitor"],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
@@ -104,7 +104,7 @@ def start_antigravity():
                 print("🔄 Attempting to restart dashboard...")
                 dashboard_proc = subprocess.Popen(
                     [python_exe, "-m", "streamlit", "run", 
-                     "antigravity/dashboard.py", 
+                     "antigravity/interface/dashboard.py", 
                      "--server.headless", "true",
                      "--server.port", "8501"],
                     stdout=subprocess.DEVNULL,

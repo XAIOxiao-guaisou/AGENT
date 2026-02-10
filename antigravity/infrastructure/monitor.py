@@ -278,7 +278,14 @@ class AntigravityMonitor(FileSystemEventHandler):
             print('❌ Retry limit reached. Manual Intervention Required.')
             self.state_manager.set_takeover_status('Error', 'Retry limit reached')
 if __name__ == '__main__':
-    path = '.'
+    import argparse
+    parser = argparse.ArgumentParser(description='Antigravity Monitor')
+    parser.add_argument('--active-project', type=str, help='Path to active project to monitor directly')
+    args = parser.parse_args()
+    
+    path = args.active_project if args.active_project else '.'
+    if args.active_project:
+        print(f"🎯 [Monitor] Targeted Mode: {path}")
     from antigravity.utils.env_checker import check_dependencies
     print('🛡️ Pre-flight Check: Scanning PLAN.md for dependencies...')
     try:

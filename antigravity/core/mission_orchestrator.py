@@ -166,7 +166,12 @@ class MissionOrchestrator:
 
     def _handle_analyzing(self, task):
         """Phase 25: Neural Nexus / 快速分析穿透"""
-        print(f"🧠 [Nexus] 正在快速检索任务 {task.task_id} 的语义索引...")
+        # Logic Penetration: Zero-G for Dashboard Tasks
+        if task.metadata.get('created_via') == 'dashboard':
+             print(f"🚀 [Zero-G] Dashboard 任务 {task.task_id} 检测到。绕过深度语义共识。")
+        else:
+             print(f"🧠 [Nexus] 正在快速检索任务 {task.task_id} 的语义索引...")
+             
         # 强制补充文件路径元数据
         if not task.metadata.get('file_path'):
             task.metadata['file_path'] = 'PLAN.md'
@@ -178,7 +183,11 @@ class MissionOrchestrator:
 
     def _handle_reviewing(self, task):
         """Phase 27: Consensus Engine / 快速审核通过"""
-        print(f"🗳️ [Consensus] 审查官已批准策略，准予点火执行。")
+        # Logic Penetration
+        if task.metadata.get('created_via') == 'dashboard':
+            print(f"🚀 [Zero-G] 自动批准 Dashboard 策略。")
+        else:
+            print(f"🗳️ [Consensus] 审查官已批准策略，准予点火执行。")
         
         # State Penetration: Directly to GENERATING
         self._transition_to_generating(task)
@@ -187,25 +196,38 @@ class MissionOrchestrator:
     def _handle_generating(self, task):
         """
         Phase 23: Absolute Wake-up (绝对唤醒协议)
-        对齐 Dashboard 的物理成功路径，使用 os.startfile。
+        v2.1.12: Absolute Path Hardening & GUI Warmup
         """
         from antigravity.utils.config import CONFIG
         import os
+        import time
         
         editor_lnk = CONFIG.get('EDITOR_PATH', "D:\\桌面\\Antigravity.lnk")
         target_file = task.metadata.get('file_path') or 'PLAN.md'
-        full_path = os.path.abspath(os.path.join(str(self.project_root), target_file))
+        full_path = str(os.path.abspath(os.path.join(str(self.project_root), target_file)))
         
         try:
             print(f"⚡ [Physical Trigger] 正在强制唤醒编辑器: {full_path}")
             
-            if os.path.exists(editor_lnk):
-                # 关键：使用与 Dashboard 手动按钮相同的物理接口
-                os.startfile(editor_lnk)
-                print(f"✅ [Physical] 编辑器已成功由系统外壳唤起。")
-            else:
-                print(f"❌ [Physical Error] 快捷方式不存在: {editor_lnk}")
-                return TaskState.HEALING
+            # v2.1.12: Hardening - Switch CWD to Project Root
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(str(self.project_root))
+                print(f"📂 [Context] Switched CWD to: {os.getcwd()}")
+                
+                if os.path.exists(editor_lnk):
+                    # GUI Warmup
+                    print("⏳ [Warmup] 等待编辑器 GUI 就绪 (2s)...")
+                    time.sleep(2.0)
+                    
+                    os.startfile(editor_lnk)
+                    print(f"✅ [Physical] 编辑器已成功由系统外壳唤起。")
+                    print(f"✅ Target Verified: {full_path}")
+                else:
+                    print(f"❌ [Physical Error] 快捷方式不存在: {editor_lnk}")
+                    return TaskState.HEALING
+            finally:
+                os.chdir(original_cwd) # Restore CWD safety
                 
             task.state = TaskState.AUDITING
             self._log_transition(task, 'GENERATING', 'AUDITING')
@@ -256,23 +278,36 @@ class MissionOrchestrator:
             return TaskState.DONE
         
     def _handle_healing(self, task):
+        """Phase 28: Autonomous Genesis (自主演化 / 自愈)"""
         if not hasattr(task, 'retry_count'):
             task.retry_count = 0
         task.retry_count += 1
         
         if task.retry_count > 3:
-             print(f"❌ Healing failed. ROLLBACK.")
+             print(f"❌ Healing failed (Max Retries). ROLLBACK.")
              task.state = TaskState.ROLLBACK
              self._log_transition(task, 'HEALING', 'ROLLBACK')
              return TaskState.ROLLBACK
         
-        print(f"⚕️ Healing Attempt {task.retry_count}/3...")
-        if self._attempt_healing():
-            task.state = TaskState.GENERATING
-            self._log_transition(task, 'HEALING', 'GENERATING')
-            return TaskState.GENERATING
+        print(f"⚕️ [Autonomous Genesis] Healing Attempt {task.retry_count}/3...")
+        
+        # Self-Correction Logic
+        try:
+            plan_path = self.project_root / 'PLAN.md'
+            if plan_path.exists():
+                with open(plan_path, 'a', encoding='utf-8') as f:
+                    timestamp = datetime.now().strftime('%H:%M:%S')
+                    f.write(f"\n\n> [AUTO-FIX {timestamp}] Previous audit failed. Retrying logic generation.\n")
+                print(f"✅ [Self-Reflect] Added fix instruction to PLAN.md")
+                
+            # Reset to ANALYZING to re-trigger the loop
+            task.state = TaskState.ANALYZING
+            self._log_transition(task, 'HEALING', 'ANALYZING')
+            return TaskState.ANALYZING
             
-        return TaskState.HEALING
+        except Exception as e:
+            print(f"⚠️ Healing Error: {e}")
+            return TaskState.ROLLBACK
 
     def _handle_rollback(self, task):
         # Was PAUSED

@@ -349,19 +349,34 @@ if __name__ == '__main__':
                             if current_state == TaskState.PENDING:
                                 auto_states.append(TaskState.PENDING)
                                 
-                            if current_state in auto_states or (current_state == TaskState.ANALYZING): # Drive through analysis too if stuck
+                            # v2.1.14: Sovereign Drive (Aggressive Loop)
+                            # If we are in a driving state, keep stepping until blocked or done
+                            if current_state in auto_states or (current_state == TaskState.ANALYZING):
                                 print(f"⚙️ [Mission Loop] Driving Task {orch.current_task.task_id} ({current_state.value})...")
-                                new_state = orch.step()
-                                if new_state != current_state:
-                                    print(f"✨ [Mission Loop] Transitioned to {new_state.value}")
-                                    orch.save_state(str(state_file))
-                                    modified = True
+                                
+                                # Power-Through Loop
+                                while True:
+                                    prev_state = orch.current_task.state
+                                    new_state = orch.step()
+                                    
+                                    if new_state != prev_state:
+                                        print(f"✨ [Mission Loop] Transitioned to {new_state.value}")
+                                        orch.save_state(str(state_file))
+                                        modified = True
+                                        
+                                        # If we hit a stopping state, break
+                                        if new_state in [TaskState.AUDITING, TaskState.DONE, TaskState.PENDING]:
+                                            break
+                                        # Otherwise, continue driving immediately (Zero-G)
+                                    else:
+                                        # State didn't change, break to avoid infinite loop if stuck
+                                        break
                                     
                         # 4. Debounce
                         if modified:
-                            time.sleep(0.5) # Fast loop if working
+                            time.sleep(0.2) # Ultra-fast debounce
                         else:
-                            time.sleep(1.0) # Fast poll (v2.1.10)
+                            time.sleep(1.0) # Regular poll
                     else:
                         time.sleep(1.0) 
                 else:

@@ -182,16 +182,58 @@ class MissionOrchestrator:
         return TaskState.REVIEWING
 
     def _handle_reviewing(self, task):
-        """Phase 27: Consensus Engine / 快速审核通过"""
+        """Phase 27: Confidence Engine / 强制 Zero-G 穿透"""
         # Logic Penetration
-        if task.metadata.get('created_via') == 'dashboard':
-            print(f"🚀 [Zero-G] 自动批准 Dashboard 策略。")
-        else:
-            print(f"🗳️ [Consensus] 审查官已批准策略，准予点火执行。")
+        if task.metadata.get('created_via') == 'dashboard' or 'task_' in task.task_id:
+            print(f"🚀 [Zero-G] 检测到主权任务 {task.task_id}，正在强行跳过共识审计...")
+            # State Penetration: Directly to GENERATING
+            task.state = TaskState.GENERATING
+            self._log_transition(task, 'REVIEWING', 'GENERATING')
+            return TaskState.GENERATING
         
-        # State Penetration: Directly to GENERATING
+        print(f"🗳️ [Consensus] 审查官已批准策略，准予点火执行。")
         self._transition_to_generating(task)
         return TaskState.GENERATING
+
+    def _handle_generating(self, task):
+        """
+        Phase 23: Absolute Wake-up (绝对唤醒协议)
+        v2.1.14: Absolute Physical Path & CWD Hardening
+        """
+        from antigravity.utils.config import CONFIG
+        import os
+        import time
+        
+        editor_lnk = CONFIG.get('EDITOR_PATH', "D:\\桌面\\Antigravity.lnk")
+        target_file = task.metadata.get('file_path') or 'PLAN.md'
+        full_path = os.path.abspath(os.path.join(str(self.project_root), target_file))
+        
+        print(f"⚡ [Physical Trigger] 正在唤起 Antigravity 操刀文件: {full_path}")
+        
+        try:
+            # v2.1.14 Hardening: Explicit CWD Switch
+            original_cwd = os.getcwd()
+            try:
+                if os.path.exists(editor_lnk):
+                    # Switch to Project Root to ensure shortcut context is correct
+                    os.chdir(str(self.project_root))
+                    print(f"📂 [Context] Switched CWD to Project Root: {self.project_root}")
+                    
+                    os.startfile(editor_lnk)
+                    print(f"✅ [Physical] 唤醒信号已发出。")
+                    time.sleep(1.0) # UI Warmup
+                else:
+                    print(f"❌ [Physical Error] 找不到快捷方式: {editor_lnk}")
+                    return TaskState.HEALING
+            finally:
+                os.chdir(original_cwd)
+                
+            task.state = TaskState.AUDITING
+            self._log_transition(task, 'GENERATING', 'AUDITING')
+            return TaskState.AUDITING
+        except Exception as e:
+            print(f"❌ [Physical Error] 自动唤醒严重失效: {e}")
+            return TaskState.HEALING
 
     def _handle_generating(self, task):
         """

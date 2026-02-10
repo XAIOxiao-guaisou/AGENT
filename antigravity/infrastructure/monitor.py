@@ -292,8 +292,78 @@ if __name__ == '__main__':
     observer.schedule(AntigravityMonitor(path), path, recursive=True)
     observer.start()
     try:
+        print("🧠 Monitor Heartbeat Active: Listening for Mission State...")
+        from antigravity.utils.p3_root_detector import find_project_root
+        from antigravity.core.mission_orchestrator import MissionOrchestrator, TaskState
+        from antigravity.infrastructure.p3_state_manager import P3StateManager
+        
+        # Initialize Global State Manager to find active project
+        # path is '.', assuming we are in AGENT root
+        chk_state_mgr = P3StateManager(Path(path).resolve())
+        
         while True:
-            time.sleep(1)
+            try:
+                # 1. Identify Active Project
+                # Reload global state to get latest active project
+                chk_state_mgr.global_state = chk_state_mgr._load_global_state()
+                active_rel = chk_state_mgr.global_state.get('last_active')
+                
+                if active_rel:
+                    project_root = Path(path).resolve() / active_rel
+                    state_file = project_root / ".antigravity" / "mission_state.json"
+                    
+                    if state_file.exists():
+                        # 2. Load Orchestrator
+                        orch = MissionOrchestrator(str(project_root))
+                        orch.load_state(str(state_file))
+                        
+                        # 3. Process Pending/Active Tasks
+                        # Logic: If current task is in a transient state, step it.
+                        # States requiring auto-step: REVIEWING, GENERATING, HEALING, ROLLBACK
+                        # PENDING is triggered by Dashboard. 
+                        # ANALYZING is triggered by Dashboard (usually).
+                        # DONE and AUDITING (waiting for user/check) are stable.
+                        
+                        modified = False
+                        
+                        # Check queue for PENDING if no current task
+                        if not orch.current_task and orch.tasks:
+                            for t in orch.tasks:
+                                if t.state == TaskState.PENDING:
+                                    orch.current_task = t
+                                    modified = True
+                                    break
+                        
+                        if orch.current_task:
+                            current_state = orch.current_task.state
+                            auto_states = [TaskState.REVIEWING, TaskState.GENERATING, TaskState.HEALING, TaskState.ROLLBACK]
+                            
+                            # Special case: If we just loaded and it's PENDING (missed trigger), kick it.
+                            if current_state == TaskState.PENDING:
+                                auto_states.append(TaskState.PENDING)
+                                
+                            if current_state in auto_states or (current_state == TaskState.ANALYZING): # Drive through analysis too if stuck
+                                print(f"⚙️ [Mission Loop] Driving Task {orch.current_task.task_id} ({current_state.value})...")
+                                new_state = orch.step()
+                                if new_state != current_state:
+                                    print(f"✨ [Mission Loop] Transitioned to {new_state.value}")
+                                    orch.save_state(str(state_file))
+                                    modified = True
+                                    
+                        # 4. Debounce
+                        if modified:
+                            time.sleep(0.5) # Fast loop if working
+                        else:
+                            time.sleep(1.0) # Fast poll (v2.1.10)
+                    else:
+                        time.sleep(1.0) 
+                else:
+                    time.sleep(1.0)
+                    
+            except Exception as e:
+                print(f"⚠️ [Mission Loop Error] {e}")
+                time.sleep(5.0)
+                
     except KeyboardInterrupt:
         observer.stop()
     observer.join()

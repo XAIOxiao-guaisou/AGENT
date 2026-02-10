@@ -29,7 +29,7 @@ state_mgr = get_state_manager()
 st.sidebar.header(t('sidebar_control'))
 st.sidebar.subheader(t('language'))
 lang_options = {'中文': 'zh', 'English': 'en'}
-selected_lang = st.sidebar.radio('', options=list(lang_options.keys()), index=0 if st.session_state.language == 'zh' else 1, horizontal=True)
+selected_lang = st.sidebar.radio('Language', options=list(lang_options.keys()), index=0 if st.session_state.language == 'zh' else 1, horizontal=True, label_visibility="collapsed")
 if lang_options[selected_lang] != st.session_state.language:
     st.session_state.language = lang_options[selected_lang]
     st.rerun()
@@ -280,7 +280,7 @@ if st.session_state.get('show_audit_logs', False):
                 df_data.append({t('col_time'): audit.get('timestamp', '')[:19], t('col_file'): audit.get('file_path', ''), t('col_event'): audit.get('event_type', ''), t('col_status'): audit.get('status', '')})
             if df_data:
                 df = pd.DataFrame(df_data)
-                st.dataframe(df, use_container_width=True, hide_index=True)
+                st.dataframe(df, hide_index=True)
         else:
             st.info(t('no_activity'))
         last_error = system_status.get('last_error_log')
@@ -466,29 +466,75 @@ with st.container():
                     with open(full_path, 'w', encoding='utf-8') as f:
                         f.write(content)
                     created_files.append(file_path)
-                st.balloons()
-                st.success(t('project_created').format(project_name))
-                with st.expander(t('created_files')):
-                    for f in created_files:
-                        st.text(f'✅ projects/{project_name}/{f}')
-                st.info('🎯 ' + t('auto_focusing_project'))
-                from pathlib import Path
-                from antigravity.infrastructure.p3_state_manager import P3StateManager
-                project_path_obj = Path('projects') / project_name
-                st.session_state.last_selected_project = None
-                st.session_state.active_project_root = project_path_obj
+                    
+                # ---------------------------------------------------------
+                # Phase 28: Scaffolding Ignition (v2.1.4)
+                # ---------------------------------------------------------
+                
+                # 1. Initialize Mission Orchestrator
+                from antigravity.core.mission_orchestrator import MissionOrchestrator, AtomicTask, TaskState
+                from datetime import datetime
+                
+                orch = MissionOrchestrator(project_path)
+                
+                # 1a. Record Scaffolding Task (DONE)
+                scaffold_task = AtomicTask(
+                    task_id=f"task_{int(datetime.now().timestamp())}_scaffold",
+                    type="scaffold",
+                    goal=f"Initialize {project_name} structure",
+                    state=TaskState.DONE,
+                    metadata={'created_via': 'scaffolding_launcher'}
+                )
+                orch.tasks.append(scaffold_task)
+                
+                # 1b. Create Initial Analysis Task (PENDING) -> Triggers Monitor
+                # If user provided a plan, we should ANALYZE it.
+                # If not, we still create a "Review Structure" task to test the loop.
+                init_goal = "Analyze Project Requirements" if st.session_state.get('p3_plan_content') else "Review Project Structure"
+                
+                init_task = AtomicTask(
+                    task_id=f"task_{int(datetime.now().timestamp())}_init",
+                    type="plan",
+                    goal=init_goal,
+                    state=TaskState.PENDING,
+                    metadata={'file_path': 'PLAN.md'}
+                )
+                orch.tasks.append(init_task)
+                
+                # Save State
+                (Path(project_path) / ".antigravity").mkdir(exist_ok=True)
+                orch.save_state(str(os.path.join(project_path, ".antigravity", "mission_state.json")))
+
+                # v2.1.9: Heartbeat Pulse - Force Backend Reload
+                # 强制清除旧 Checkpoint，迫使 Monitor 感知新任务
+                checkpoint_path = Path(project_path) / ".antigravity" / "checkpoints" / f"{init_task.task_id}.json"
+                if checkpoint_path.exists():
+                    checkpoint_path.unlink()
+                
+                # 2. Register & Switch Context
+                state_mgr.register_project(project_path)
+                st.session_state.active_project_root = Path(project_path).resolve()
+                
+                # 3. Telemetry Ignition
                 try:
-                    st.session_state.active_state_mgr = P3StateManager(project_path_obj)
-                    try:
-                        from antigravity.infrastructure.performance_monitor import PerformanceMonitor
-                        st.session_state.active_perf_monitor = PerformanceMonitor(str(project_path_obj))
-                    except:
-                        st.session_state.active_perf_monitor = None
-                    st.success('✅ ' + t('project_auto_focused'))
-                except Exception as e:
-                    st.warning(f'⚠️ Auto-focus initialization: {e}')
-                state_mgr.log_audit(f'projects/{project_name}', 'project_scaffolding', f'Created project with {len(created_files)} files', 'INFO')
+                    from antigravity.infrastructure.telemetry_queue import TelemetryQueue, TelemetryEventType
+                    TelemetryQueue.push_event(TelemetryEventType.PROJECT_CREATED, {
+                        "project": project_name,
+                        "path": project_path
+                    })
+                    TelemetryQueue.push_event(TelemetryEventType.TASK_INITIATED, {
+                        "task_id": init_task.task_id,
+                        "goal": init_goal,
+                        "project": project_name
+                    })
+                except Exception:
+                    pass
+                
+                st.success(f"🚀 Project {project_name} Launched & Ignited!")
+                st.balloons()
+                time.sleep(1.0)
                 st.rerun()
+
             except Exception as e:
                 st.error(t('project_creation_failed').format(e))
                 import traceback

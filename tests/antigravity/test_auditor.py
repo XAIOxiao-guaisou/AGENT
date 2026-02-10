@@ -1,7 +1,7 @@
 import unittest
 import os
 from unittest.mock import MagicMock, patch
-from antigravity.auditor import Auditor
+from antigravity.core.autonomous_auditor import AutonomousAuditor as Auditor
 
 class TestAuditor(unittest.TestCase):
     def setUp(self):

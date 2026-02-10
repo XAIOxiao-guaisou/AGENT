@@ -217,3 +217,21 @@ class StateManager:
         """Get complete system status."""
         state = self._read_state()
         return state.get("system_status", {})
+
+    # ===========================
+    # P3 Compatibility Shim
+    # ===========================
+    def register_project(self, project_path: str):
+        """
+        Shim for P3 Auto-Registration.
+        Delegates to P3StateManager to ensure global registry is updated.
+        """
+        try:
+            from antigravity.infrastructure.p3_state_manager import P3StateManager
+            # Verify path is valid
+            abs_path = os.path.abspath(project_path)
+            # Initialize P3 manager temporarily just to register
+            p3_mgr = P3StateManager(abs_path)
+            p3_mgr.register_project(project_path)
+        except Exception as e:
+            print(f"⚠️ StateManager Shim Error: {e}")

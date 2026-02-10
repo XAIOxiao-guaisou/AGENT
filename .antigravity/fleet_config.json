@@ -1,0 +1,16 @@
+{
+  "projects": {
+    "web_xianyu": {
+      "project_id": "web_xianyu",
+      "path": "projects\\web_xianyu",
+      "name": "web_xianyu",
+      "status": "ACTIVE",
+      "last_active": "2026-02-10T13:54:32.176564",
+      "merkle_root": null,
+      "vibe_score": 0,
+      "workspace_root": null,
+      "config": null
+    }
+  },
+  "last_active": "web_xianyu"
+}

@@ -1,3 +1,10 @@
+import sys
+import os
+from pathlib import Path
+
+# 审查官补丁：注入包根目录
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 import time
 import os
 import fnmatch

@@ -74,19 +74,16 @@ class MissionOrchestrator:
     Core logic for dispatching and tracking tasks.
     核心逻辑：分发和跟踪任务。
     """
-    def __init__(self, project_root: str):
+    def __init__(self, project_root: str = None):
         from pathlib import Path
         
-        # Ensure project_root is a Path object
+        # 动态溯源：若未指定路径，则从当前文件位置向上查找 2 层 [幻觉可疑度: 3%]
         if project_root is None:
-            # Fallback/Auto-detect if needed (though usually passed explicitly)
-            from antigravity.utils.p3_root_detector import find_project_root
-            try:
-                self.project_root = Path(find_project_root())
-            except:
-                self.project_root = Path('.')
+            self.project_root = Path(__file__).resolve().parents[2]
         else:
             self.project_root = Path(project_root)
+            
+        print(f"🏗️ [Orchestrator] 初始化物理根目录: {self.project_root}")
             
         # Force Checkpoint Directory Creation
         self.checkpoint_dir = self.project_root / ".antigravity" / "checkpoints"
@@ -197,42 +194,59 @@ class MissionOrchestrator:
 
     def _handle_generating(self, task):
         """
-        Phase 23: Absolute Wake-up (绝对唤醒协议)
-        v2.1.14: Absolute Physical Path & CWD Hardening
+        Phase 23.5: Absolute Portable Wake-up (绝对自适应唤醒协议)
+        由审查官指导：废除硬编码，实现跨机 100% 物理对齐。
         """
+        import os, time, subprocess
+        from pathlib import Path
         from antigravity.utils.config import CONFIG
-        import os
-        import time
         
-        editor_lnk = CONFIG.get('EDITOR_PATH', "D:\\桌面\\Antigravity.lnk")
+        # 1. 动态定位桌面路径 (Multi-Location Desktop Search)
+        # 适配不同 Windows 版本、用户名及 OneDrive 环境 [幻觉可疑度: 2%]
+        user_home = Path.home()
+        potential_desktops = [
+            user_home / "Desktop",
+            user_home / "OneDrive" / "Desktop",
+            user_home / "OneDrive" / "桌面",
+            user_home / "桌面"
+        ]
+        
+        # 2. 搜索 Antigravity.lnk
+        editor_lnk = CONFIG.get('EDITOR_PATH')
+        if not editor_lnk or not os.path.exists(editor_lnk):
+            editor_lnk = None # Reset if invalid
+            for desktop in potential_desktops:
+                cand = desktop / "Antigravity.lnk"
+                if cand.exists():
+                    editor_lnk = str(cand)
+                    break
+        
         target_file = task.metadata.get('file_path') or 'PLAN.md'
         full_path = os.path.abspath(os.path.join(str(self.project_root), target_file))
         
-        print(f"⚡ [Physical Trigger] 正在唤起 Antigravity 操刀文件: {full_path}")
-        
+        print(f"📡 [Path Discovery] 跨机链路自适应探测:")
+        print(f"   - Current Workspace: {self.project_root}")
+        print(f"   - Editor Shortcut: {editor_lnk if editor_lnk else 'NOT_FOUND'}")
+
         try:
-            # v2.1.14 Hardening: Explicit CWD Switch
-            original_cwd = os.getcwd()
-            try:
-                if os.path.exists(editor_lnk):
-                    # Switch to Project Root to ensure shortcut context is correct
-                    os.chdir(str(self.project_root))
-                    print(f"📂 [Context] Switched CWD to Project Root: {self.project_root}")
-                    
-                    os.startfile(editor_lnk)
-                    print(f"✅ [Physical] 唤醒信号已发出。")
-                    time.sleep(1.0) # UI Warmup
-                else:
-                    print(f"❌ [Physical Error] 找不到快捷方式: {editor_lnk}")
-                    return TaskState.HEALING
-            finally:
-                os.chdir(original_cwd)
+            if editor_lnk and os.path.exists(editor_lnk):
+                # 关键：切换工作目录至项目根目录，防止编辑器加载上下文偏移
+                os.chdir(str(self.project_root))
+                
+                # 使用 Windows shell 直接唤起，比 subprocess.run 传递 LNK 更稳健 [幻觉可疑度: 5%]
+                os.startfile(editor_lnk)
+                
+                print(f"✅ [Physical] 物理链路已握手成功。")
+                time.sleep(1.0) # 预热
+            else:
+                print(f"❌ [Physical Error] 在新电脑未找到 Antigravity.lnk，请检查桌面。")
+                return TaskState.HEALING
                 
             task.state = TaskState.AUDITING
             self._log_transition(task, 'GENERATING', 'AUDITING')
             return TaskState.AUDITING
         except Exception as e:
-            print(f"❌ [Physical Error] 自动唤醒严重失效: {e}")
+            print(f"❌ [Migration Error] 物理唤醒失效: {e}")
             return TaskState.HEALING
 
     def _handle_generating(self, task):

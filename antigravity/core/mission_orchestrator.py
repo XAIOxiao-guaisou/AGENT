@@ -185,9 +185,13 @@ class MissionOrchestrator:
         """Phase 27: Consensus Engine / 快速审核通过"""
         # Logic Penetration
         if task.metadata.get('created_via') == 'dashboard':
-            print(f"🚀 [Zero-G] 自动批准 Dashboard 策略。")
-        else:
-            print(f"🗳️ [Consensus] 审查官已批准策略，准予点火执行。")
+            print("🚀 [Zero-G] 发射台脉冲检测成功，正在强制穿透至 GENERATING...")
+            # State Penetration: Directly to GENERATING
+            self._transition_to_generating(task)
+            return TaskState.GENERATING
+        
+        print(f"🗳️ [Consensus] 审查官已批准策略，准予点火执行。")
+        print(f"🔮 CHRONOS: Predicting outcome for Task {task.task_id}...")
         
         # State Penetration: Directly to GENERATING
         self._transition_to_generating(task)

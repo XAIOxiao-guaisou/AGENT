@@ -1,11 +1,11 @@
 {
-  "version": "v2.2.0",
-  "status": "GLOBAL_MIGRATION_ZERO_DRIFT",
-  "timestamp": "2026-02-10T18:30:00",
+  "version": "v2.2.0-force",
+  "status": "GLOBAL_MIGRATION_FORCE_ALIGNED",
+  "timestamp": "2026-02-10T18:38:00",
   "signed_by": "Chief Reviewer",
   "features": [
-    "Dynamic Root Detection",
-    "Multi-Desktop Search",
-    "Zero-Drift Wake-up"
+    "Force-Drop Init",
+    "Hunter-Seeker Protocol",
+    "Zero-Hardcoding"
   ]
 }

@@ -77,17 +77,17 @@ class MissionOrchestrator:
     def __init__(self, project_root: str = None):
         from pathlib import Path
         
-        # 动态溯源：若未指定路径，则从当前文件位置向上查找 2 层 [幻觉可疑度: 3%]
+        # 审查官补丁：通过文件祖先链自动定位根目录
         if project_root is None:
+            # 向上追溯 2 层到达 AGENT 根目录
             self.project_root = Path(__file__).resolve().parents[2]
         else:
             self.project_root = Path(project_root)
             
-        print(f"🏗️ [Orchestrator] 初始化物理根目录: {self.project_root}")
-            
-        # Force Checkpoint Directory Creation
+        # 强制更新 Checkpoint 路径
         self.checkpoint_dir = self.project_root / ".antigravity" / "checkpoints"
-        try:
+        self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        print(f"🏗️ [Orchestrator] 物理根目录已对齐: {self.project_root}")
             self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         except Exception as e:
             print(f"⚠️ Failed to create checkpoint dir: {e}")

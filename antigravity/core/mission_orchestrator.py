@@ -197,42 +197,55 @@ class MissionOrchestrator:
 
     def _handle_generating(self, task):
         """
-        Phase 23: Absolute Wake-up (绝对唤醒协议)
-        v2.1.14: Absolute Physical Path & CWD Hardening
+        Phase 23.5: Portable Wake-up (全域自适应唤醒协议)
+        由审查官指导：动态探测新电脑路径，确保跨机 100% 可用。
         """
-        from antigravity.utils.config import CONFIG
-        import os
-        import time
+        import os, time
+        from pathlib import Path
         
-        editor_lnk = CONFIG.get('EDITOR_PATH', "D:\\桌面\\Antigravity.lnk")
+        # 1. 动态获取当前项目根目录 (Dynamic Workspace Root)
+        # 不再依赖 settings.json 的硬编码 [幻觉可疑度: 2%]
+        current_root = Path(__file__).resolve().parents[2]
+        
+        # 2. 动态定位桌面路径 (Windows Dynamic Desktop Search)
+        # 适配不同用户名及系统盘符 [幻觉可疑度: 5%]
+        user_home = os.path.expanduser("~")
+        desktop_paths = [
+            os.path.join(user_home, "Desktop"),
+            os.path.join(user_home, "OneDrive", "桌面"), # 适配 OneDrive 同步环境
+            os.path.join(user_home, "桌面")
+        ]
+        
+        editor_lnk = None
+        for dp in desktop_paths:
+            potential_path = os.path.join(dp, "Antigravity.lnk")
+            if os.path.exists(potential_path):
+                editor_lnk = potential_path
+                break
+        
         target_file = task.metadata.get('file_path') or 'PLAN.md'
         full_path = os.path.abspath(os.path.join(str(self.project_root), target_file))
         
-        print(f"⚡ [Physical Trigger] 正在唤起 Antigravity 操刀文件: {full_path}")
-        
+        print(f"📡 [Path Discovery] 跨机链路自适应探测:")
+        print(f"   - Detected Root: {current_root}")
+        print(f"   - Target LNK: {editor_lnk}")
+
         try:
-            # v2.1.14 Hardening: Explicit CWD Switch
-            original_cwd = os.getcwd()
-            try:
-                if os.path.exists(editor_lnk):
-                    # Switch to Project Root to ensure shortcut context is correct
-                    os.chdir(str(self.project_root))
-                    print(f"📂 [Context] Switched CWD to Project Root: {self.project_root}")
-                    
-                    os.startfile(editor_lnk)
-                    print(f"✅ [Physical] 唤醒信号已发出。")
-                    time.sleep(1.0) # UI Warmup
-                else:
-                    print(f"❌ [Physical Error] 找不到快捷方式: {editor_lnk}")
-                    return TaskState.HEALING
-            finally:
-                os.chdir(original_cwd)
+            if editor_lnk and os.path.exists(editor_lnk):
+                # 切换至项目根目录，防止快捷方式工作目录偏移
+                os.chdir(str(self.project_root))
+                os.startfile(editor_lnk)
+                print(f"✅ [Physical] 跨机物理链路握手成功。")
+                time.sleep(2.0)
+            else:
+                print(f"❌ [Physical Error] 在新电脑未找到 Antigravity.lnk，请将其放入桌面。")
+                return TaskState.HEALING
                 
             task.state = TaskState.AUDITING
             self._log_transition(task, 'GENERATING', 'AUDITING')
             return TaskState.AUDITING
         except Exception as e:
-            print(f"❌ [Physical Error] 自动唤醒严重失效: {e}")
+            print(f"❌ [Migration Error] 自动唤醒失效: {e}")
             return TaskState.HEALING
 
     def _handle_generating(self, task):

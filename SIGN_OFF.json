@@ -1,6 +1,11 @@
 {
-  "version": "v2.1.12",
-  "status": "STEALTH_EXECUTION_READY",
-  "timestamp": "2026-02-10T15:20:00",
-  "signed_by": "Chief Reviewer"
+  "version": "v2.1.14",
+  "status": "SOVEREIGN_DRIVE_ACTIVE",
+  "timestamp": "2026-02-10T18:05:00",
+  "signed_by": "Chief Reviewer",
+  "features": [
+    "Zero-G Penetration",
+    "Absolute Wake-up",
+    "Aggressive Monitor Loop"
+  ]
 }

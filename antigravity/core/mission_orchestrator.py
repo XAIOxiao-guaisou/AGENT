@@ -140,10 +140,51 @@ class MissionOrchestrator:
         return TaskState.ANALYZING
 
     def _handle_analyzing(self, task):
-        # Analysis logic here...
-        task.state = TaskState.REVIEWING
-        self._log_transition(task, 'ANALYZING', 'REVIEWING')
-        return TaskState.REVIEWING
+        """
+        Phase 25: Neural Nexus Integration (神经中枢集成)
+        From local intent to global semantic understanding.
+        """
+        print(f"🧠 [Neural Nexus] 正在检索任务 {task.task_id} 的全域语义索引...")
+        
+        try:
+            # 动态接入全域知识图谱
+            from antigravity.core.knowledge_graph import FleetKnowledgeGraph
+            kg = FleetKnowledgeGraph.get_instance()
+            
+            # 执行全域语义搜索 (Global Semantic Search)
+            # 检索现有项目（如 vortex_core, vortex_scraper）中的类似实现
+            similar_nodes = kg.semantic_search(task.goal, limit=3) 
+            
+            if similar_nodes:
+                # Extract name safely if it's a dict or object
+                names = []
+                for n in similar_nodes:
+                     if isinstance(n, dict):
+                         names.append(n.get('name', 'Unknown'))
+                     elif hasattr(n, 'name'):
+                         names.append(n.name)
+                     else:
+                         names.append(str(n))
+
+                print(f"💡 [Nexus Insight] 发现相关经验: {', '.join(names)}")
+                task.metadata['nexus_insight'] = similar_nodes
+            else:
+                print("ℹ️ [Nexus] 未发现直接相关的跨项目经验。")
+            
+            # 分析完成后，按 8-State 流程转入 REVIEWING (策略审核) 状态
+            task.state = TaskState.REVIEWING
+            self._log_transition(task, 'ANALYZING', 'REVIEWING')
+            return TaskState.REVIEWING
+            
+        except ImportError:
+             print("⚠️ [Neural Nexus] 组件未安装，跳过语义检索。")
+             task.state = TaskState.REVIEWING
+             return TaskState.REVIEWING
+        except Exception as e:
+            print(f"⚠️ [Neural Nexus] 离线或检索失败: {e}")
+            # 降级处理：直接进入审核阶段以保持执行连续性
+            task.state = TaskState.REVIEWING
+            return TaskState.REVIEWING
 
     def _handle_reviewing(self, task):
         # Was PREDICTING / STRATEGY_REVIEW

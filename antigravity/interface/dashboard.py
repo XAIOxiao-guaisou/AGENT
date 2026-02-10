@@ -3,6 +3,7 @@ import json
 import time
 import os
 from antigravity.infrastructure.state_manager import StateManager
+from antigravity.infrastructure.p3_state_manager import P3StateManager
 from antigravity.utils.config import CONFIG
 from pathlib import Path
 try:

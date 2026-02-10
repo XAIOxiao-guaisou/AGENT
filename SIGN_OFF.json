@@ -1,11 +1,11 @@
 {
   "version": "v2.2.0",
-  "status": "GLOBAL_MIGRATION_READY",
-  "timestamp": "2026-02-10T18:20:00",
+  "status": "GLOBAL_MIGRATION_ZERO_DRIFT",
+  "timestamp": "2026-02-10T18:30:00",
   "signed_by": "Chief Reviewer",
   "features": [
-    "Dynamic Path Discovery",
-    "Desktop Auto-Location",
-    "Migration Resilience"
+    "Dynamic Root Detection",
+    "Multi-Desktop Search",
+    "Zero-Drift Wake-up"
   ]
 }

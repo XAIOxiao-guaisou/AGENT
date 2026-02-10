@@ -76,6 +76,7 @@ class MissionOrchestrator:
     """
     def __init__(self, project_root: str = None):
         from pathlib import Path
+        import networkx as nx
         
         # 审查官补丁：通过文件祖先链自动定位根目录
         if project_root is None:
@@ -86,9 +87,9 @@ class MissionOrchestrator:
             
         # 强制更新 Checkpoint 路径
         self.checkpoint_dir = self.project_root / ".antigravity" / "checkpoints"
-        self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
-        print(f"🏗️ [Orchestrator] 物理根目录已对齐: {self.project_root}")
+        try:
             self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+            print(f"🏗️ [Orchestrator] 物理根目录已对齐: {self.project_root}")
         except Exception as e:
             print(f"⚠️ Failed to create checkpoint dir: {e}")
 

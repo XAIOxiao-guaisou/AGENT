@@ -55,6 +55,15 @@ def start_web_factory():
         cwd=os.getcwd(),
         shell=False
     )
+
+    # 3. Launch Backend Execution Engine (Monitor) - Triple Ignition
+    print("   ⚙️ Launching Backend Execution Engine (Monitor)...")
+    monitor_cmd = [sys.executable, "antigravity/infrastructure/monitor.py"]
+    monitor_process = subprocess.Popen(
+        monitor_cmd,
+        cwd=os.getcwd(),
+        shell=False
+    )
     
     print("\n✅ Antigravity Web Factory Online:")
     print("   - 📊 Dashboard: http://localhost:8501")
@@ -76,6 +85,7 @@ def start_web_factory():
         print("\n🛑 Shutting down Web Factory...")
         dashboard_process.terminate()
         hud_process.terminate()
+        monitor_process.terminate()
         print("✅ Shutdown complete.")
 
 if __name__ == "__main__":

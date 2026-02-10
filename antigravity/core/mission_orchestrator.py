@@ -75,7 +75,26 @@ class MissionOrchestrator:
     核心逻辑：分发和跟踪任务。
     """
     def __init__(self, project_root: str):
-        self.project_root = project_root
+        from pathlib import Path
+        
+        # Ensure project_root is a Path object
+        if project_root is None:
+            # Fallback/Auto-detect if needed (though usually passed explicitly)
+            from antigravity.utils.p3_root_detector import find_project_root
+            try:
+                self.project_root = Path(find_project_root())
+            except:
+                self.project_root = Path('.')
+        else:
+            self.project_root = Path(project_root)
+            
+        # Force Checkpoint Directory Creation
+        self.checkpoint_dir = self.project_root / ".antigravity" / "checkpoints"
+        try:
+            self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            print(f"⚠️ Failed to create checkpoint dir: {e}")
+
         self.tasks: List[AtomicTask] = []
         self.execution_history: List[Dict] = []
         self.current_task: Optional[AtomicTask] = None
@@ -196,49 +215,29 @@ class MissionOrchestrator:
 
     def _handle_generating(self, task):
         """
-        Phase 23: Physical Handshake - 物理握手协议
+        Phase 23: Physical Handshake - 物理握手协议 (Hardened in v2.1.2)
         From Internal Simulation -> Physical Editor Dispatch
         """
         # 1. Extract target file
         target_file = task.metadata.get('file_path')
         if not target_file:
-             # Fallback if no file path (e.g. pure research task)
              if task.goal:
-                 target_file = "PLAN.md" # Default to plan
+                 target_file = "PLAN.md"
              else:
                 print("❌ No target file for physical dispatch. Rolling back.")
-                task.state = TaskState.TO_ROLLBACK # Typo in user request? "ROLLBACK" is enum.
-                # User used TaskState.ROLLBACK in request.
+                task.state = TaskState.ROLLBACK
                 return TaskState.ROLLBACK
 
         # 2. Get Physical Editor Path
         from antigravity.utils.config import CONFIG
-        # Config might be loaded in __init__, or we use global CONFIG
-        # CONFIG is imported in other files, let's assume it's available or load from settings.json
-        # The user code used `self.config.get`. MissionOrchestrator doesn't seem to have `self.config` initialized in the snippet I saw?
-        # Let's check imports. `from antigravity.utils.config import CONFIG` is common. 
-        # But MissionOrchestrator might not have it.
-        # I'll use a safe approach: load if needed, or use the injected path.
-        editor_path = "D:\\桌面\\Antigravity.lnk" # Default hardcoded as per user request fallback
-        try:
-            from antigravity.utils.config import CONFIG
-            editor_path = CONFIG.get('EDITOR_PATH', editor_path)
-        except ImportError:
-            pass
+        editor_path = CONFIG.get('EDITOR_PATH', "D:\\桌面\\Antigravity.lnk")
         
         try:
-            print(f"🚀 Physical Dispatch: DeepSeek invoking Antigravity -> {target_file}")
+            full_file_path = str(self.project_root / target_file)
+            print(f"⚡ [Physical Trigger] 正在强制唤起编辑器操刀: {full_file_path}")
             
-            # Use Windows 'start' command
+            # Use Windows 'start' command for robust .lnk handling
             import subprocess
-            from pathlib import Path
-            
-            full_file_path = str(Path(self.project_root) / target_file)
-            
-            # Verify file exists or create it so editor doesn't complain? 
-            # The prompt implies "Antigravity操刀文件", implying we might need to make sure it exists or the editor creates it.
-            # "start" with arguments usually opens the file.
-            
             subprocess.run(['start', '', editor_path, full_file_path], shell=True, check=True)
             
             # 3. Telemetry
@@ -247,7 +246,7 @@ class MissionOrchestrator:
                 TelemetryQueue.push_event(TelemetryEventType.STATE_CHANGE, {
                     "task_id": task.task_id,
                     "action": "EDITOR_WAKEN",
-                    "editor": "Antigravity",
+                    "status": "PHYSICAL_EDITOR_ACTIVE",
                     "target": target_file
                 })
             except Exception:
@@ -258,7 +257,7 @@ class MissionOrchestrator:
             return TaskState.AUDITING
 
         except Exception as e:
-            print(f"❌ Physical Dispatch Failed: {e}")
+            print(f"❌ [Physical Error] 编辑器唤起失败: {e}")
             self.trigger_healing(task)
             return TaskState.HEALING
 

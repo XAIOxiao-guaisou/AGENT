@@ -49,8 +49,30 @@ if st.sidebar.button(t('check_deps')):
         if missing:
             st.sidebar.warning(t('missing_deps').format(', '.join(missing)))
         else:
+
             st.sidebar.success(t('all_deps_ok'))
 st.sidebar.markdown('---')
+st.sidebar.subheader("🛠️ 物理调度 (Physical Dispatch)")
+
+if st.sidebar.button("🎨 唤起 Antigravity 编辑器", use_container_width=True):
+    editor_path = CONFIG.get('EDITOR_PATH', "D:\\桌面\\Antigravity.lnk")
+    if os.path.exists(editor_path):
+        os.startfile(editor_path)
+        st.sidebar.success("✅ 已向物理层发送唤起指令")
+    else:
+        st.sidebar.error("❌ 未找到 Antigravity.lnk，请检查配置路径")
+
+# 实时显示 DeepSeek 决策链
+if 'active_state_mgr' in st.session_state:
+    try:
+        # Get current status from manager? Or just assume from session state if we had it.
+        # But here we just want to show the warning if needed.
+        # We can verify if system status says "GENERATING" (mapped from Orchestrator?)
+        # For now, following user instruction "if st.session_state.get('current_state') ..."
+        if st.session_state.get('current_state') == 'GENERATING':
+             st.warning("⚠️ DeepSeek 正在操作 Antigravity 进行物理写入...")
+    except:
+        pass
 st.sidebar.subheader('🚢 ' + t('project_center'))
 
 # Phase 11: Fleet Commander Integration

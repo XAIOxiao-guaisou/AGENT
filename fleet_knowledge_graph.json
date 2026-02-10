@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "last_updated": "2026-02-10T12:26:12.423099",
+  "projects": {
+    "antigravity_v2": {
+      "description": "No description available.",
+      "version": "2.1.0",
+      "exports": [],
+      "tech_stack": [],
+      "last_audit": "2026-02-10T11:40:00.000000"
+    }
+  },
+  "relationships": []
+}

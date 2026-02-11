@@ -76,19 +76,20 @@ class MissionOrchestrator:
     """
     def __init__(self, project_root: str = None):
         from pathlib import Path
+        import networkx as nx
         
-        # 动态溯源：若未指定路径，则从当前文件位置向上查找 2 层 [幻觉可疑度: 3%]
+        # 审查官补丁：通过文件祖先链自动定位根目录
         if project_root is None:
+            # 向上追溯 2 层到达 AGENT 根目录
             self.project_root = Path(__file__).resolve().parents[2]
         else:
             self.project_root = Path(project_root)
             
-        print(f"🏗️ [Orchestrator] 初始化物理根目录: {self.project_root}")
-            
-        # Force Checkpoint Directory Creation
+        # 强制更新 Checkpoint 路径
         self.checkpoint_dir = self.project_root / ".antigravity" / "checkpoints"
         try:
             self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+            # print(f"🏗️ [Orchestrator] 物理根目录已对齐: {self.project_root}")
         except Exception as e:
             print(f"⚠️ Failed to create checkpoint dir: {e}")
 
@@ -119,40 +120,67 @@ class MissionOrchestrator:
 
     def step(self, task: Optional[AtomicTask] = None) -> TaskState:
         """
-        Execute one atomic step of the mission.
-        Phase 22: Optimized Dispatcher.
+        Phase 26: 针对性 Debug 拦截 (Targeted Interceptor)
         """
         if task is None:
             task = self.current_task
         
         if not task:
             # v2.1.9: Auto-Scan Recovery
-            # 尝试从物理文件扫描恢复任务
-            # (Hypothetical method - relying on heartbeat to drive this primarily, 
-            # but acts as fallback if orchestration is lost)
             return TaskState.PENDING
             
         # v2.1.9: Explicit Status Debug
-        # 强制打印当前状态，方便 Debug
         print(f"🔍 [Orchestrator] 当前任务 {task.task_id} 状态: {task.state}")
 
-        # Phase 22: Dispatcher Pattern
-        handlers = {
-            TaskState.PENDING: self._handle_pending,
-            TaskState.ANALYZING: self._handle_analyzing,
-            TaskState.REVIEWING: self._handle_reviewing,
-            TaskState.GENERATING: self._handle_generating,
-            TaskState.AUDITING: self._handle_auditing,
-            TaskState.HEALING: self._handle_healing,
-            TaskState.ROLLBACK: self._handle_rollback,
-            TaskState.DONE: self._handle_done
+        # 🛡️ 哨兵拦截切面 (Sentinel Intercept)
+        try:
+            # Phase 22: Dispatcher Pattern
+            handlers = {
+                TaskState.PENDING: self._handle_pending,
+                TaskState.ANALYZING: self._handle_analyzing,
+                TaskState.REVIEWING: self._handle_reviewing,
+                TaskState.GENERATING: self._handle_generating,
+                TaskState.AUDITING: self._handle_auditing,
+                TaskState.HEALING: self._handle_healing,
+                TaskState.ROLLBACK: self._handle_rollback,
+                TaskState.DONE: self._handle_done
+            }
+            
+            handler = handlers.get(task.state)
+            if handler:
+                return handler(task)
+                
+            return task.state
+
+        except Exception as e:
+            # 🚨 哨兵立即执行现场抓取 (Instant Capture)
+            self._capture_sentinel_debug(task, e)
+            return self.trigger_healing(task)
+
+    def _capture_sentinel_debug(self, task, error):
+        """生成当前项目专属的 .debug.json 快照"""
+        import traceback, json, time
+        from datetime import datetime
+        
+        # 统一存储在当前项目的 checkpoints 目录下
+        snapshot_path = self.checkpoint_dir / f"debug_{task.task_id}_{int(time.time())}.json"
+        
+        snapshot = {
+            "project_root": str(self.project_root),
+            "task_id": task.task_id,
+            "error_type": type(error).__name__,
+            "message": str(error),
+            "traceback": traceback.format_exc(),
+            "timestamp": datetime.now().isoformat()
         }
         
-        handler = handlers.get(task.state)
-        if handler:
-            return handler(task)
-            
-        return task.state
+        try:
+            with open(snapshot_path, "w", encoding="utf-8") as f:
+                json.dump(snapshot, f, indent=2, ensure_ascii=False)
+            print(f"🚨 [Sentinel] 捕捉到崩溃现场，快照已生成: {snapshot_path.name}")
+        except Exception as snapshot_error:
+            print(f"🚨 [Sentinel] 快照生成失败: {snapshot_error}")
+
 
     # --- Phase 22: State Handlers ---
 
@@ -202,6 +230,9 @@ class MissionOrchestrator:
         from antigravity.utils.config import CONFIG
         
         # 1. 动态定位桌面路径 (Multi-Location Desktop Search)
+        # 适配不同 Windows 版本、用户名及 OneDrive 环境 [幻觉可疑度: 2%]
+        user_home = Path.home()
+        # 2. 动态定位桌面路径 (Multi-Location Desktop Search)
         # 适配不同 Windows 版本、用户名及 OneDrive 环境 [幻觉可疑度: 2%]
         user_home = Path.home()
         potential_desktops = [
@@ -258,7 +289,13 @@ class MissionOrchestrator:
         import os
         import time
         
-        editor_lnk = CONFIG.get('EDITOR_PATH', "D:\\桌面\\Antigravity.lnk")
+        # Try to find Antigravity.lnk dynamically if not in config
+        user_home = Path.home()
+        default_lnk = user_home / "Desktop" / "Antigravity.lnk"
+        if not default_lnk.exists():
+             default_lnk = user_home / "OneDrive" / "Desktop" / "Antigravity.lnk"
+        
+        editor_lnk = CONFIG.get('EDITOR_PATH', str(default_lnk))
         target_file = task.metadata.get('file_path') or 'PLAN.md'
         full_path = str(os.path.abspath(os.path.join(str(self.project_root), target_file)))
         

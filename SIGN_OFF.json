@@ -1,11 +1,7 @@
 {
-  "version": "v2.2.0",
-  "status": "GLOBAL_MIGRATION_ZERO_DRIFT",
-  "timestamp": "2026-02-10T18:30:00",
-  "signed_by": "Chief Reviewer",
-  "features": [
-    "Dynamic Root Detection",
-    "Multi-Desktop Search",
-    "Zero-Drift Wake-up"
-  ]
+  "version": "2.2.0",
+  "status": "MIGRATION_READY",
+  "timestamp": "2026-02-10T19:00:00.000000",
+  "signature": "ANTIGRAVITY-SOVEREIGN-V2-2-0-MIGRATION-SEAL-20260210",
+  "integrity_hash": "3b1b062d3479dd79"
 }

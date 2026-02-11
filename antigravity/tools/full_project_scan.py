@@ -13,7 +13,7 @@ try:
 except ImportError:
     # Fallback if path insert fails or running from wrong dir
     try:
-        sys.path.insert(0, r"d:\桌面\AGENT")
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
         from antigravity.utils.io_utils import safe_read, sanitize_for_protobuf
     except ImportError as e:
         print(f"❌ Import Error: {e}")

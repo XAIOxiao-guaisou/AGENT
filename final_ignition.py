@@ -8,7 +8,8 @@ from pathlib import Path
 from datetime import datetime
 
 # Add project root
-sys.path.insert(0, r"d:\桌面\AGENT")
+# Add project root
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from antigravity.utils.io_utils import safe_read
 
@@ -23,7 +24,7 @@ def generate_ast_hash(content):
 def final_ignition():
     print("🚀 PHASE 15.0: JOINT IGNITION SEQUENCE STARTED")
     
-    project_root = Path(r"d:\桌面\AGENT")
+    project_root = Path(__file__).resolve().parent
     snapshot_path = project_root / "AST_SNAPSHOT.json"
     
     # 1. Integrity Check

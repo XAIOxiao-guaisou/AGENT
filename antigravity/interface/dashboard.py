@@ -23,6 +23,38 @@ def t(key):
 st.set_page_config(page_title=t('page_title'), layout='wide', page_icon='🛡️')
 st.title(t('header'))
 
+# -----------------------------------------------------------------------------
+# Phase 26: Sentinel Scanner (哨兵扫描器)
+# -----------------------------------------------------------------------------
+def get_sentinel_errors(active_root):
+    # 扫描当前活跃项目的 checkpoints 文件夹
+    ckpt_dir = Path(active_root) / ".antigravity" / "checkpoints"
+    if not ckpt_dir.exists(): return []
+    return sorted(list(ckpt_dir.glob("debug_*.json")), key=lambda x: x.stat().st_mtime, reverse=True)
+
+active_root_scan = st.session_state.get('active_project_root', '.')
+sentinel_errors = get_sentinel_errors(active_root_scan)
+
+if sentinel_errors:
+    st.error(f"🛑 [Sentinel] 监测到 {len(sentinel_errors)} 个运行异常！")
+    with st.expander(f"🔍 展开检查最后一个异常的物理现场 ({sentinel_errors[0].name})"):
+        try:
+            with open(sentinel_errors[0], 'r', encoding='utf-8') as f:
+                err_data = json.load(f)
+            st.warning(f"Error: {err_data.get('error_type')} - {err_data.get('message')}")
+            st.code(err_data.get('traceback'), language='python')
+        except Exception as e:
+            st.error(f"无法读取快照文件: {e}")
+            
+        if st.button("🗑️ 现场清理并重启执行", key="sentinel_clean_btn"):
+            for f in sentinel_errors:
+                try:
+                    f.unlink()
+                except:
+                    pass
+            st.rerun()
+# -----------------------------------------------------------------------------
+
 @st.cache_resource
 def get_state_manager():
     return StateManager('.')
@@ -56,7 +88,20 @@ st.sidebar.markdown('---')
 st.sidebar.subheader("🛠️ 物理调度 (Physical Dispatch)")
 
 if st.sidebar.button("🎨 唤起 Antigravity 编辑器", use_container_width=True):
-    editor_path = CONFIG.get('EDITOR_PATH', "D:\\桌面\\Antigravity.lnk")
+    user_home = os.path.expanduser("~")
+    possible_paths = [
+        os.path.join(user_home, "Desktop", "Antigravity.lnk"),
+        os.path.join(user_home, "OneDrive", "Desktop", "Antigravity.lnk"),
+        os.path.join(user_home, "桌面", "Antigravity.lnk"),
+        "D:\\桌面\\Antigravity.lnk"
+    ]
+    default_path = "D:\\桌面\\Antigravity.lnk"
+    for p in possible_paths:
+        if os.path.exists(p):
+            default_path = p
+            break
+            
+    editor_path = CONFIG.get('EDITOR_PATH', default_path)
     if os.path.exists(editor_path):
         os.startfile(editor_path)
         st.sidebar.success("✅ 已向物理层发送唤起指令")

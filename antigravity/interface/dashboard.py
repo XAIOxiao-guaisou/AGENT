@@ -3,8 +3,7 @@ import json
 import time
 from pathlib import Path
 from antigravity.infrastructure.p3_state_manager import P3StateManager
-from antigravity.core.mission_orchestrator import MissionOrchestrator
-from antigravity.infrastructure.state_manager import AtomicTask
+from antigravity.core.mission_orchestrator import MissionOrchestrator, AtomicTask, TaskState
 
 st.set_page_config(page_title="Antigravity 自动化开发产线", layout="wide", page_icon="🚀")
 
@@ -109,8 +108,10 @@ if st.button("🔥 物理点火：自动推演并接管", use_container_width=Tr
             # 创建一个处于 PENDING 状态的初始任务，等待 Monitor 捕获并推入 BLUEPRINTING 状态
             task = AtomicTask(
                 task_id=f"INIT_{project_name}", 
-                description="Init project from Blueprint", 
-                target_file="[AUTO_SCAFFOLD]"
+                type="code",
+                goal=f"Init project from Blueprint for {project_name}", 
+                metadata={"created_via": "dashboard", "file_path": "PLAN.md"},
+                state=TaskState.PENDING
             )
             orch.tasks.append(task)
             

@@ -295,14 +295,18 @@ class MissionOrchestrator:
         current_file = remaining[0]
         print(f"✍️ [Coding Loop] 正在请求实体浇筑: {current_file}")
         
-        system_prompt = f"""你现在是 Antigravity 产线的首席工程师。项目架构蓝图已敲定。请为指定文件生成完整的、生产级别的 Python 代码。
-要求：只输出代码块，不要解释说明。格式：
-```python
-# 代码内容
-```"""
+        system_prompt = f"""你现在是 Antigravity 产线的首席工程师。请为指定文件生成完整的、生产级别的 Python/Node 代码。
+要求：直接且仅输出代码块（```python 或 ```javascript），绝对不要有任何多余的解释说明或 markdown。"""
         vision_file = self.project_root / "PLAN.md"
         vision_text = vision_file.read_text(encoding="utf-8") if vision_file.exists() else task.goal
-        user_prompt = f"项目愿景：\n{vision_text}\n请实现文件 `{current_file}`。直接输出代码，无需 Markdown 包裹外其他内容。"
+        
+        target_path = self.project_root / current_file
+        existing_code = target_path.read_text(encoding='utf-8') if target_path.exists() else ""
+        
+        if task.metadata.get('is_iteration') and existing_code.strip():
+            user_prompt = f"项目总体愿景及迭代需求：\n{vision_text}\n\n🚨 [当前物理现场代码] ({current_file}) ---------------------------------\n```python\n{existing_code}\n```\n---------------------------------\n请基于上述现有代码以及最新的迭代愿景，对该文件进行重构补充。要求直接输出针对该文件的最新完整代码，无需其它回复！"
+        else:
+            user_prompt = f"项目愿景：\n{vision_text}\n请从零实现文件 `{current_file}`。直接输出代码，无需 Markdown 包裹外其他内容。"
 
         try:
             llm_response = self._call_deepseek_api(system_prompt, user_prompt)

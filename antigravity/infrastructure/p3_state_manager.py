@@ -129,6 +129,11 @@ class P3StateManager:
         """📡 记忆读取：供 Dashboard 侧边栏投影使用"""
         return self.global_state.get("history_vault", [])
 
+    def check_project_exists(self, project_name: str) -> bool:
+        """🔍 物理现场存活校验 (Phase 33)"""
+        project_dir = Path("projects") / project_name
+        return project_dir.exists() and project_dir.is_dir()
+
     def wipe_history_cache(self):
         """🗑️ 物理清洗：格式化 UI 记忆中枢 (不删源码)"""
         with self._lock:

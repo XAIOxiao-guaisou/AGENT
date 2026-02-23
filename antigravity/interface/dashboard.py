@@ -97,7 +97,7 @@ if st.button("🔥 物理点火：创建并自动接管", use_container_width=Tr
             metadata={"created_via": "dashboard", "file_path": "PLAN.md"}, # Zero-G 穿透钥匙
             state=TaskState.PENDING
         )
-        orch.add_task(task)
+        orch.tasks.append(task)
         
         # 写入物理快照，唤醒 Monitor 后端引擎
         state_file = project_dir / ".antigravity" / "mission_state.json"

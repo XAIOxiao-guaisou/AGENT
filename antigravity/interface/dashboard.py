@@ -1,25 +1,24 @@
 import streamlit as st
 import json
 import time
-import os
-from antigravity.infrastructure.state_manager import StateManager
-from antigravity.infrastructure.p3_state_manager import P3StateManager
 from pathlib import Path
+from antigravity.infrastructure.p3_state_manager import P3StateManager
+from antigravity.core.mission_orchestrator import MissionOrchestrator
+from antigravity.infrastructure.state_manager import AtomicTask
 
 st.set_page_config(page_title="Antigravity 自动化开发产线", layout="wide", page_icon="🚀")
 
 @st.cache_resource
-def get_state_manager():
-    return StateManager('.')
+def get_p3_manager():
+    return P3StateManager('.')
 
-state_mgr = get_state_manager()
-p3_mgr = P3StateManager(Path("."))
+p3_mgr = get_p3_manager()
 
 # ==========================================
-# 🗂️ 侧边栏：神经印记与清理中枢
+# 🗂️ 侧边栏：神经印记与清理中枢 (Phase 32)
 # ==========================================
 with st.sidebar:
-    st.markdown("### 🗂️ 产线历史档案 (History Vault)")
+    st.markdown("### 🗂️ 产线历史档案")
     history_records = p3_mgr.get_history()
     
     if not history_records:
@@ -27,24 +26,29 @@ with st.sidebar:
     else:
         for record in history_records:
             st.markdown(f"**📦 {record['name']}**")
-            st.caption(f"⏱️ {record['timestamp']}")
+            # 格式化时间戳显示
+            fmt_time = record['timestamp'][:19].replace("T", " ")
+            st.caption(f"⏱️ {fmt_time}")
             st.text(f"🎯 {record['vision']}")
             st.divider()
             
     st.markdown("---")
-    if st.button("🗑️ 清理历史缓存 (Wipe Cache)", type="secondary", use_container_width=True):
+    if st.button("🗑️ 清理历史缓存", type="secondary", use_container_width=True):
         p3_mgr.wipe_history_cache()
-        st.success("✅ 神经印记已格式化！(物理源码保留在磁盘中)")
+        st.success("✅ 神经印记已格式化！")
         st.rerun()
 
-# 1. 顶部：保留 Sentinel 哨兵警报 (Phase 26 的成果)
+# ==========================================
+# 1. 顶部：Sentinel 哨兵警报 (免疫系统)
+# ==========================================
 def get_sentinel_errors(active_root):
+    if not active_root: return []
     ckpt_dir = Path(active_root) / ".antigravity" / "checkpoints"
     if not ckpt_dir.exists(): return []
     return sorted(list(ckpt_dir.glob("debug_*.json")), key=lambda x: x.stat().st_mtime, reverse=True)
 
-active_root = st.session_state.get('active_project_root', '.')
-errors = get_sentinel_errors(active_root)
+active_project = p3_mgr.global_state.get("last_active")
+errors = get_sentinel_errors(active_project)
 
 if errors:
     st.error(f"🛑 [Sentinel] 监测到 {len(errors)} 个运行异常！")
@@ -59,88 +63,65 @@ if errors:
             
         if st.button("🗑️ 现场清理并重启执行", key="sentinel_clean_btn"):
             for f in errors:
-                try:
-                    f.unlink()
-                except:
-                    pass
+                try: f.unlink()
+                except: pass
             st.rerun()
 
-st.title("🚀 Antigravity 自动化开发产线 (Pure Factory)")
+st.title("🚀 Antigravity 自动化开发产线 (v3.0-lite)")
 
-# 2. 核心区：直接展示【新项目全自动发射台】
-st.subheader("📦 1. 定义新项目")
+# ==========================================
+# 2. 核心区：全自动发射台 (极简模式)
+# ==========================================
+st.subheader("📦 定义新项目愿景")
 col1, col2 = st.columns([1, 1])
 
 with col1:
-    project_name = st.text_input("项目名称 (如: DataAnalyzer)", placeholder="my_new_project")
+    project_name = st.text_input("项目名称 (如: TradingAgent)", placeholder="输入项目名...")
 
 with col2:
     uploaded_file = st.file_uploader("📤 上传需求文档 (.txt/.md)", type=['txt', 'md'])
-    plan_content = ""
-    if uploaded_file:
-        plan_content = uploaded_file.getvalue().decode('utf-8')
-    
-    project_plan = st.text_area("📜 项目执行愿景 (Vision)", value=plan_content, height=150)
+    plan_content = uploaded_file.getvalue().decode('utf-8') if uploaded_file else ""
+    project_plan = st.text_area("📜 核心愿景 (PLAN.md)", value=plan_content, height=150, placeholder="描述系统要实现什么功能？大脑将自动推演文件树并注入代码...")
 
-# 3. 发射按钮与神经重连
-if st.button("🔥 物理点火：创建并自动接管", use_container_width=True, type="primary"):
+# ==========================================
+# 3. 发射机制 (神经互联与挂载)
+# ==========================================
+if st.button("🔥 物理点火：自动推演并接管", use_container_width=True, type="primary"):
     if not project_name or not project_plan:
-        st.error("❌ 项目名称与业务愿景不能为空！")
+        st.error("❌ 项目名称与愿景不能为空！")
     else:
-        # --- 1. 物理框架建立 ---
+        # 建立物理根骨架
         project_dir = Path("projects") / project_name
         project_dir.mkdir(parents=True, exist_ok=True)
         (project_dir / "PLAN.md").write_text(project_plan, encoding="utf-8")
         
-        # --- 2. 🚨 核心修复：主权状态注册 ---
-        import time
-        from antigravity.core.mission_orchestrator import MissionOrchestrator, AtomicTask, TaskState
+        # 🚨 Phase 30.2 修复: 引擎正确注册与对齐
+        project_rel_path = f"projects/{project_name}"
+        p3_mgr.register_project(project_rel_path)
+        p3_mgr.global_state["last_active"] = project_rel_path
         
-        # 将当前新项目设为全局活跃，确保 Monitor 的视线聚焦于此
-        p3_mgr.register_project(f"projects/{project_name}")
-        p3_mgr.global_state["last_active"] = f"projects/{project_name}"
+        # 🚨 Phase 32 记忆注入: 写入侧边栏档案
+        p3_mgr.record_project_history(project_name, project_plan)
         
-        # 🚨 新增：将目标刻录到历史档案中
-        p3_mgr.record_project_history(project_name, vision_summary=project_plan)
-        
-        p3_mgr._save_global_state()
-        
-        # --- 3. 🚨 核心修复：发射台任务注入 ---
-        # 必须创建任务快照，Monitor 才能穿透状态机并唤起编辑器
-        orch = MissionOrchestrator(str(project_dir))
-        task = AtomicTask(
-            task_id=f"task_{int(time.time())}_{project_name}",
-            type="code",
-            goal=f"Implement quantitative trading framework for {project_name}",
-            metadata={"created_via": "dashboard", "file_path": "PLAN.md"}, # Zero-G 穿透钥匙
-            state=TaskState.PENDING
-        )
-        orch.tasks.append(task)
-        
-        # 写入物理快照，唤醒 Monitor 后端引擎
-        state_file = project_dir / ".antigravity" / "mission_state.json"
-        state_file.parent.mkdir(parents=True, exist_ok=True)
-        orch.save_state(str(state_file))
-        
-        st.success(f"✅ 项目 {project_name} 已成功注册至神经中枢！主权引擎正在物理唤醒...")
-
-# 4. 底部：保留实时的 Audit 历史日志
-st.markdown("---")
-st.subheader("🔍 实时执行监控")
-
-audits = state_mgr.get_recent_audits(limit=20)
-if audits:
-    import pandas as pd
-    df_data = []
-    for audit in reversed(audits[-10:]):
-        df_data.append({
-            'Time': audit.get('timestamp', '')[:19], 
-            'File': audit.get('file_path', ''), 
-            'Event': audit.get('event_type', ''), 
-            'Status': audit.get('status', '')
-        })
-    if df_data:
-        df = pd.DataFrame(df_data)
-        st.dataframe(df, hide_index=True)
-else:
-    st.info('Waiting for agent activity...')
+        # 🚨 Phase 30.2 修复: Orchestrator 任务强行挂载
+        try:
+            orch = MissionOrchestrator(str(project_dir))
+            # 创建一个处于 PENDING 状态的初始任务，等待 Monitor 捕获并推入 BLUEPRINTING 状态
+            task = AtomicTask(
+                task_id=f"INIT_{project_name}", 
+                description="Init project from Blueprint", 
+                target_file="[AUTO_SCAFFOLD]"
+            )
+            orch.tasks.append(task)
+            
+            # 建立系统隐藏目录并持久化
+            ag_dir = project_dir / ".antigravity"
+            ag_dir.mkdir(parents=True, exist_ok=True)
+            orch.save_state(str(ag_dir / "mission_state.json"))
+            
+            st.success(f"✅ {project_name} 神经链路挂载完毕！记录已固化。等待大脑接管...")
+            time.sleep(1)
+            st.rerun()
+            
+        except Exception as e:
+            st.error(f"引擎通信异常: {e}")

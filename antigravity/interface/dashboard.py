@@ -82,7 +82,10 @@ if st.button("🔥 物理点火：创建并自动接管", use_container_width=Tr
         from antigravity.core.mission_orchestrator import MissionOrchestrator, AtomicTask, TaskState
         
         # 将当前新项目设为全局活跃，确保 Monitor 的视线聚焦于此
-        P3StateManager(Path(".")).set_active_project(f"projects/{project_name}")
+        p3_mgr = P3StateManager(Path("."))
+        p3_mgr.register_project(f"projects/{project_name}")
+        p3_mgr.global_state["last_active"] = f"projects/{project_name}"
+        p3_mgr._save_global_state()
         
         # --- 3. 🚨 核心修复：发射台任务注入 ---
         # 必须创建任务快照，Monitor 才能穿透状态机并唤起编辑器

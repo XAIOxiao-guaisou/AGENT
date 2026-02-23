@@ -61,42 +61,59 @@ class StateManager:
         except Exception as e:
             print(f"⚠️ Migration warning: {e}")
     
+    def _get_default_state(self) -> Dict[str, Any]:
+        return {
+            "audits": [],
+            "retry_counts": {},
+            "system_status": {
+                "takeover_status": "Idle",
+                "last_error_log": None,
+                "last_update": datetime.now().isoformat()
+            },
+            "environment_checks": []
+        }
+
     def _read_state(self) -> Dict[str, Any]:
-        """Read state from file with locking."""
+        """Read state from file with locking and retries."""
         with self._lock:
-            try:
-                with open(self.state_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except (FileNotFoundError, json.JSONDecodeError):
-                # Return default state if file is corrupted
-                return {
-                    "audits": [],
-                    "retry_counts": {},
-                    "system_status": {
-                        "takeover_status": "Idle",
-                        "last_error_log": None,
-                        "last_update": datetime.now().isoformat()
-                    },
-                    "environment_checks": []
-                }
+            for attempt in range(5):
+                try:
+                    with open(self.state_file, 'r', encoding='utf-8') as f:
+                        return json.load(f)
+                except (FileNotFoundError, json.JSONDecodeError):
+                    if attempt == 4:
+                        return self._get_default_state()
+                    time.sleep(0.05)
+                except PermissionError:
+                    if attempt == 4:
+                        return self._get_default_state()
+                    time.sleep(0.05)
+            return self._get_default_state()
     
     def _write_state(self, state: Dict[str, Any]):
-        """Write state to file atomically with locking."""
+        """Write state to file atomically with locking and retries."""
         with self._lock:
-            # Atomic write: write to temp file, then rename
-            temp_file = self.state_file + ".tmp"
-            try:
-                with open(temp_file, 'w', encoding='utf-8') as f:
-                    json.dump(state, f, indent=2, ensure_ascii=False)
-                
-                # Atomic rename (on Windows, need to remove target first)
-                if os.path.exists(self.state_file):
-                    os.remove(self.state_file)
-                os.rename(temp_file, self.state_file)
-            except Exception as e:
-                if os.path.exists(temp_file):
-                    os.remove(temp_file)
-                raise e
+            temp_file = f"{self.state_file}.{os.getpid()}.{time.time()}.tmp"
+            for attempt in range(5):
+                try:
+                    with open(temp_file, 'w', encoding='utf-8') as f:
+                        json.dump(state, f, indent=2, ensure_ascii=False)
+                    
+                    # Atomic replace handles rename + overwrite on Windows nicely
+                    os.replace(temp_file, self.state_file)
+                    break
+                except PermissionError as e:
+                    if attempt == 4:
+                        if os.path.exists(temp_file):
+                            try: os.remove(temp_file)
+                            except: pass
+                        raise e
+                    time.sleep(0.1)
+                except Exception as e:
+                    if os.path.exists(temp_file):
+                        try: os.remove(temp_file)
+                        except: pass
+                    raise e
     
     def log_audit(self, file_path: str, event_type: str, message: str, status: str = "INFO"):
         """

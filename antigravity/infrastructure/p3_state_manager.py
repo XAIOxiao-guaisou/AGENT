@@ -101,6 +101,36 @@ class P3StateManager:
                 self._save_global_state()
                 print(f"✅ P3: Registered project: {project_path}")
     
+    def record_project_history(self, project_name: str, vision_summary: str):
+        """🧠 记忆固化：将新项目刻录到全局历史档案中"""
+        if "history_vault" not in self.global_state:
+            self.global_state["history_vault"] = []
+        
+        # 避免重复记录，如果存在则更新时间戳或移至队首
+        history = self.global_state["history_vault"]
+        history = [p for p in history if p.get("name") != project_name]
+        
+        # 插入新记录（包含项目名、时间戳和一句话愿景）
+        import time
+        history.insert(0, {
+            "name": project_name,
+            "vision": vision_summary[:30] + "..." if len(vision_summary) > 30 else vision_summary,
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+        })
+        
+        self.global_state["history_vault"] = history
+        self._save_global_state()
+
+    def get_history(self) -> list:
+        """📡 记忆读取：供 Dashboard 投影使用"""
+        return self.global_state.get("history_vault", [])
+
+    def wipe_history_cache(self, delete_physical_files=False):
+        """🗑️ 物理清洗：格式化记忆中枢"""
+        self.global_state["history_vault"] = []
+        self.global_state["last_active"] = None
+        self._save_global_state()
+    
     def get_all_projects(self) -> List[str]:
         """Get list of all registered projects"""
         return self.global_state.get("projects", [])

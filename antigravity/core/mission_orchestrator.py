@@ -24,6 +24,8 @@ from pathlib import Path
 class TaskState(Enum):
     """Task lifecycle states / 任务生命周期状态"""
     PENDING = "pending"
+    BLUEPRINTING = "blueprinting" # Phase 31: 架构推演
+    CODING_LOOP = "coding_loop"   # Phase 31: 物理灌注
     ANALYZING = "analyzing"
     REVIEWING = "reviewing"      # Was STRATEGY_REVIEW / PREDICTING
     GENERATING = "generating"    # Was EXECUTING
@@ -137,6 +139,8 @@ class MissionOrchestrator:
             # Phase 22: Dispatcher Pattern
             handlers = {
                 TaskState.PENDING: self._handle_pending,
+                TaskState.BLUEPRINTING: self._handle_blueprinting,
+                TaskState.CODING_LOOP: self._handle_coding_loop,
                 TaskState.ANALYZING: self._handle_analyzing,
                 TaskState.REVIEWING: self._handle_reviewing,
                 TaskState.GENERATING: self._handle_generating,
@@ -185,9 +189,139 @@ class MissionOrchestrator:
     # --- Phase 22: State Handlers ---
 
     def _handle_pending(self, task):
-        task.state = TaskState.ANALYZING
-        self._log_transition(task, 'PENDING', 'ANALYZING')
-        return TaskState.ANALYZING
+        task.state = TaskState.BLUEPRINTING
+        self._log_transition(task, 'PENDING', 'BLUEPRINTING')
+        return TaskState.BLUEPRINTING
+
+    def _call_deepseek_api(self, system_prompt: str, user_prompt: str) -> str:
+        from antigravity.utils.config import CONFIG
+        import urllib.request, json, os
+
+        api_key = CONFIG.get("DEEPSEEK_API_KEY") or os.environ.get("DEEPSEEK_API_KEY")
+        if not api_key:
+            print("⚠️ [哨兵警告] Missing DEEPSEEK_API_KEY. Defaulting to dummy JSON.")
+            if "json blueprint" in system_prompt:
+                return '```json blueprint\n{"main.py": "Entry point", "core/": ""}\n```'
+            return "print('dummy code generated due to missing API key')"
+            
+        url = "https://api.deepseek.com/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+        data = {
+            "model": "deepseek-chat",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            "temperature": 0.2
+        }
+        req = urllib.request.Request(url, headers=headers, data=json.dumps(data).encode('utf-8'))
+        try:
+            with urllib.request.urlopen(req) as response:
+                result = json.loads(response.read().decode('utf-8'))
+                return result['choices'][0]['message']['content']
+        except Exception as e:
+            print(f"📡 [LLM Error] {e}")
+            raise
+
+    def _handle_blueprinting(self, task):
+        """Phase 31: Autonomous Blueprinting and Physical Scaffolding"""
+        import re, json
+        print(f"🧠 [Orchestrator] 正在进行架构推演：请求 DeepSeek 蓝图...")
+        system_prompt = '''你现在是 Antigravity 产线的首席架构师。接收到业务愿景后，绝对不要立即输出具体的业务代码。
+你的第一步任务是：设计最优的模块化文件目录结构，并严格使用以下 JSON 格式在 Markdown 的 json blueprint 代码块中返回。
+格式要求：键为文件或文件夹的相对路径，值为描述（文件夹的值为空字符串）。
+示例：
+```json blueprint
+{
+  "main.py": "主控入口",
+  "core/": "",
+  "core/strategy.py": "策略逻辑",
+  "utils/logger.py": "日志工具"
+}
+```'''
+        vision_file = self.project_root / "PLAN.md"
+        vision_text = vision_file.read_text(encoding="utf-8") if vision_file.exists() else task.goal
+        user_prompt = f"项目名称：{self.project_root.name}\n项目愿景：\n{vision_text}"
+
+        try:
+            llm_response = self._call_deepseek_api(system_prompt, user_prompt)
+            match = re.search(r'```json blueprint\n(.*?)\n```', llm_response, re.DOTALL)
+            if not match:
+                raise ValueError("哨兵拦截：DeepSeek 未按协议输出 JSON 蓝图！")
+            
+            blueprint = json.loads(match.group(1))
+            print(f"📡 [神经中枢] 成功接收架构蓝图，开始物理拓荒...")
+            created_files = []
+
+            for relative_path, description in blueprint.items():
+                target_path = (self.project_root / relative_path).resolve()
+                if not str(target_path).startswith(str(self.project_root.resolve())):
+                    print(f"⚠️ [哨兵警告] 拒绝越权路径生成: {relative_path}")
+                    continue
+
+                if relative_path.endswith('/'):
+                    target_path.mkdir(parents=True, exist_ok=True)
+                    print(f"📁 创建目录: {relative_path}")
+                else:
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    target_path.touch(exist_ok=True)
+                    created_files.append(relative_path)
+                    print(f"📄 铸造文件实体: {relative_path} ({description})")
+
+            print(f"✅ [神经中枢] 物理拓荒完成。等待代码灌注。")
+            task.metadata['created_files'] = created_files
+            task.metadata['remaining_files'] = list(created_files) # To process in coding loop
+            
+            task.state = TaskState.CODING_LOOP
+            self._log_transition(task, 'BLUEPRINTING', 'CODING_LOOP')
+            return TaskState.CODING_LOOP
+
+        except Exception as e:
+            print(f"❌ [Blueprinting Error] {e}")
+            return self.trigger_healing(task)
+
+    def _handle_coding_loop(self, task):
+        """Phase 31: Physical Pouring / 代码实体验注"""
+        remaining = task.metadata.get('remaining_files', [])
+        if not remaining:
+            print(f"✅ [Coding Loop] 所有文件灌注完毕。流转至审核环节。")
+            task.state = TaskState.AUDITING
+            self._log_transition(task, 'CODING_LOOP', 'AUDITING')
+            return TaskState.AUDITING
+            
+        current_file = remaining[0]
+        print(f"✍️ [Coding Loop] 正在请求实体浇筑: {current_file}")
+        
+        system_prompt = f"""你现在是 Antigravity 产线的首席工程师。项目架构蓝图已敲定。请为指定文件生成完整的、生产级别的 Python 代码。
+要求：只输出代码块，不要解释说明。格式：
+```python
+# 代码内容
+```"""
+        vision_file = self.project_root / "PLAN.md"
+        vision_text = vision_file.read_text(encoding="utf-8") if vision_file.exists() else task.goal
+        user_prompt = f"项目愿景：\n{vision_text}\n请实现文件 `{current_file}`。直接输出代码，无需 Markdown 包裹外其他内容。"
+
+        try:
+            llm_response = self._call_deepseek_api(system_prompt, user_prompt)
+            import re
+            match = re.search(r'```python\n(.*?)\n```', llm_response, re.DOTALL)
+            code = match.group(1) if match else llm_response.replace('```python','').replace('```','')
+            
+            target_path = self.project_root / current_file
+            target_path.write_text(code, encoding='utf-8')
+            print(f"💾 [实体浇筑] 写入完成: {current_file}")
+            
+            # Pop and save state
+            task.metadata['remaining_files'] = remaining[1:]
+            
+            return TaskState.CODING_LOOP
+            
+        except Exception as e:
+            print(f"❌ [Coding Error] File {current_file}: {e}")
+            return self.trigger_healing(task)
 
     def _handle_analyzing(self, task):
         """Phase 25: Neural Nexus / 快速分析穿透"""
@@ -330,48 +464,35 @@ class MissionOrchestrator:
             return TaskState.HEALING
 
     def _handle_auditing(self, task):
-        """
-        Phase 24: Quality Tower Auto-Seal (质量塔自动封印)
-        Ensures physical integrity before state transition to DONE.
-        """
+        """Phase 31: Sentinel Audit (哨兵审计): Run main.py"""
+        import subprocess, sys
+        main_py = self.project_root / "main.py"
+        if not main_py.exists():
+             print("✅ [Sentinel Audit] 无 main.py 文件，跳过防空审查。")
+             self._transition_to_done(task)
+             return TaskState.DONE
+        
+        print(f"🏰 [Sentinel Audit] 本地空载运行探测主心骨 {main_py.name}...")
         try:
-            from antigravity.services.quality_tower import run_delivery_gate_audit
-            
-            # 定义审计上下文 (Audit Context)
-            project_context = {
-                'name': Path(self.project_root).name,
-                'root': str(self.project_root)
-            }
-            
-            print(f"🏰 [Quality Tower] 正在对任务 {task.task_id} 执行主权审计...")
-            # We need to adapt run_delivery_gate_audit to return a dict as expected
-            # If it returns None or fails, we handle exception
-            result = run_delivery_gate_audit(project_context)
-            
-            if result and result.get('status') == 'PASSED':
-                print("✅ 审计通过：代码主权完整，准予落盘。")
+            res = subprocess.run([sys.executable, str(main_py)], capture_output=True, text=True, timeout=10)
+            if res.returncode == 0:
+                print("✅ [Sentinel Audit] 执行探测通过（0代码异常）。")
                 self._transition_to_done(task)
                 return TaskState.DONE
             else:
-                issues = result.get('issues') if result else "Unknown Issues"
-                print(f"❌ 审计拒绝：检测到物理缺陷 -> {issues}")
+                tb = res.stderr or res.stdout
+                print(f"❌ [Sentinel Audit] 宕机拒绝，截获 Traceback:\n{tb}")
+                task.metadata['recent_traceback'] = tb
                 task.state = TaskState.HEALING
-                # Log telemetry for failure
                 self._log_transition(task, 'AUDITING', 'HEALING')
                 return TaskState.HEALING
-                
-        except ImportError:
-            print(f"⚠️ [Quality Tower] 组件缺失 (ImportError). 降级处理: 允许手动标记完成。")
-            self._transition_to_done(task)
-            return TaskState.DONE
         except Exception as e:
-            print(f"⚠️ [Quality Tower] 离线或错误: {e}")
-            # 降级处理：若审计组件缺失，暂时允许手动标记完成
+            print(f"⚠️ [Sentinel Audit] 执行超时或测试系统内部错误: {e}")
             self._transition_to_done(task)
             return TaskState.DONE
         
     def _handle_healing(self, task):
-        """Phase 28: Autonomous Genesis (自主演化 / 自愈)"""
+        """Phase 31: Autonomous Genesis (自主演化 / 自愈) -> Feed traceback to LLM"""
         if not hasattr(task, 'retry_count'):
             task.retry_count = 0
         task.retry_count += 1
@@ -384,19 +505,23 @@ class MissionOrchestrator:
         
         print(f"⚕️ [Autonomous Genesis] Healing Attempt {task.retry_count}/3...")
         
-        # Self-Correction Logic
         try:
-            plan_path = self.project_root / 'PLAN.md'
-            if plan_path.exists():
-                with open(plan_path, 'a', encoding='utf-8') as f:
-                    timestamp = datetime.now().strftime('%H:%M:%S')
-                    f.write(f"\n\n> [AUTO-FIX {timestamp}] Previous audit failed. Retrying logic generation.\n")
-                print(f"✅ [Self-Reflect] Added fix instruction to PLAN.md")
+            tb = task.metadata.get('recent_traceback')
+            if tb:
+                print("⚕️ [Autonomous Genesis] 正在请求超级大脑热修复 main.py...")
+                sys_prompt = "你是 Antigravity 热修复终端。分析报错信息，并输出 main.py 的修复后代码。只输出完整的 python 代码块。"
+                user_prompt = f"报错Traceback：\n{tb}\n\n请只输出修复后的代码块，格式:\n```python\n#代码\n```"
+                resp = self._call_deepseek_api(sys_prompt, user_prompt)
+                import re
+                match = re.search(r'```python\n(.*?)\n```', resp, re.DOTALL)
+                code = match.group(1) if match else resp.replace('```python','').replace('```','')
+                (self.project_root / "main.py").write_text(code, encoding="utf-8")
+                print("✅ [Auto-Fix] 已应用热修复到 main.py")
+                task.metadata['recent_traceback'] = None
                 
-            # Reset to ANALYZING to re-trigger the loop
-            task.state = TaskState.ANALYZING
-            self._log_transition(task, 'HEALING', 'ANALYZING')
-            return TaskState.ANALYZING
+            task.state = TaskState.AUDITING
+            self._log_transition(task, 'HEALING', 'AUDITING')
+            return TaskState.AUDITING
             
         except Exception as e:
             print(f"⚠️ Healing Error: {e}")

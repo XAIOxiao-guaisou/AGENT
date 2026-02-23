@@ -340,17 +340,21 @@ if __name__ == '__main__':
                         
                         modified = False
                         
-                        # Check queue for PENDING if no current task
+                        # Check queue for active tasks if no current task
                         if not orch.current_task and orch.tasks:
                             for t in orch.tasks:
-                                if t.state == TaskState.PENDING:
+                                if t.state != TaskState.DONE:
                                     orch.current_task = t
                                     modified = True
                                     break
                         
                         if orch.current_task:
                             current_state = orch.current_task.state
-                            auto_states = [TaskState.REVIEWING, TaskState.GENERATING, TaskState.HEALING, TaskState.ROLLBACK]
+                            auto_states = [
+                                TaskState.BLUEPRINTING, TaskState.CODING_LOOP,
+                                TaskState.REVIEWING, TaskState.GENERATING, 
+                                TaskState.AUDITING, TaskState.HEALING, TaskState.ROLLBACK
+                            ]
                             
                             # Special case: If we just loaded and it's PENDING (missed trigger), kick it.
                             if current_state == TaskState.PENDING:
@@ -372,7 +376,7 @@ if __name__ == '__main__':
                                         modified = True
                                         
                                         # If we hit a stopping state, break
-                                        if new_state in [TaskState.AUDITING, TaskState.DONE, TaskState.PENDING]:
+                                        if new_state in [TaskState.DONE, TaskState.PENDING]:
                                             break
                                         # Otherwise, continue driving immediately (Zero-G)
                                     else:
